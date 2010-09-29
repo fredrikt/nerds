@@ -22,6 +22,12 @@ The defined interface of a producer is simple : an executable file.
   Producers SHOULD put JSON output in
     /path/to/repo/producer/$name_of_producer/json
 
+All producers must produce JSON-data on the following form:
 
-
-The structure of the produced output is to be documented here shortly.
+{   
+   "host": {
+      "name": "hostname-or-other-unique-identifier",
+      "version": 1,
+      "name-of-producer": { ... any private data ... }
+   }
+}
