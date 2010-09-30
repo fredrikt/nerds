@@ -1,0 +1,11 @@
+For producers/nmap_services :
+
+    apt-get install \
+  	  libnmap-parser-perl
+
+
+For producers/merge_nerds :
+
+    apt-get install \
+    	    libhash-merge-perl \
+	    libjson-perl
