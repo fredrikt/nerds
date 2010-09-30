@@ -60,7 +60,7 @@ foreach my $host (sort keys %hostdata) {
     warn ("JSON output for host '$host' :\n${json}\n\n") if ($debug);
 
     if ($output_dir) {
-	my $fn = "$output_dir/${host}..SCAN";
+	my $fn = "$output_dir/${host}..json";
 	open (OUT, "> $fn") or die ("$0: Could not open '$fn' for writing : $!\n");
 	print (OUT $json);
 	close (OUT);
@@ -100,8 +100,10 @@ sub process_file
 
 	# OS signature
 	my $os = $host->os_sig ();
-	$$href{$hostname}{'host'}{'os'}{'name'} = $os->name ();
-	$$href{$hostname}{'host'}{'os'}{'family'} = $os->family ();
+	if ($os->name () or $os->family ()) {
+	    $$href{$hostname}{'host'}{'os'}{'name'} = $os->name ();
+	    $$href{$hostname}{'host'}{'os'}{'family'} = $os->family ();
+	}
 
 	# now, record open ports under a host+addr key to later be able to extend
 	# this to actually know that a service could be listening on a specific IP
