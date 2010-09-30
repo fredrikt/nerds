@@ -13,16 +13,19 @@ fi
 usage() {
    echo "Usage: $0 [options] nmap-target ..."
    echo "  [-O <output dir>]"
+   echo "  [--nmap cmd <nmap command>]"
    echo "  [--help  <show this info>]"
    exit 1
 }
 
 NMAP_TARGETS=""
+NMAP="nmap"
 
 while test $# != 0; do
     case $1 in
 	-O) REPO="$2" ; shift ;;
-	--help|-h) usage ;; 
+	--nmap) NMAP="$2" ; shift ;;
+	--help|-h) usage ;;
 	--*) usage ;;
 	*)
 	    NMAP_TARGETS="$NMAP_TARGETS $1"
@@ -32,7 +35,7 @@ while test $# != 0; do
 done
 
 if [ ! -d "$REPO" ]; then
-    echo "Invalid output dir"
+    echo "Invalid output dir '$REPO'"
     echo ""
     usage
 fi
@@ -47,7 +50,7 @@ fi
 
 trap "rm $TMPFILE 2>/dev/null" 0
 
-nmap $NERDS_NMAP_OPTIONS -oX $TMPFILE $NMAP_TARGETS
+$NMAP $NERDS_NMAP_OPTIONS -oX $TMPFILE $NMAP_TARGETS
 
 if [ $? -ne 0 ]; then
     echo ""
