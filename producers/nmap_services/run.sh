@@ -40,7 +40,7 @@ if [ ! -d "$REPO" ]; then
     usage
 fi
 
-export JSONDIR="${REPO}/${NAME}/json"
+export JSONDIR="${REPO}/producers/${NAME}/json"
 mkdir -p $JSONDIR
 
 TMPFILE=$(mktemp /tmp/nerds_${NAME}.XXXXXX)
