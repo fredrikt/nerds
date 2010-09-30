@@ -10,7 +10,7 @@ After that, you can build consumers of that data that do something valuable to y
 for example generate monitoring system configuration for all services you discovered
 when scanning your server networks.
 
-The defined interface of a producer is simple : an executable file.
+The defined interface of a producer is simple : an executable file named "run.sh".
 
   Producers MUST accept '--help' and '-h' to produce usage information.
 
