@@ -43,7 +43,7 @@ foreach my $input_dir (@input_dirs) {
 
     my @producers = get_producers ($input_dir);
 
-    foreach my $producer (@producers) {
+    foreach my $producer (sort @producers) {
 	next if ($producer eq 'merge_nerds');	# skip my own output
 	warn ("Loading producer '$producer'...\n") if ($debug);
 
