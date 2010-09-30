@@ -9,53 +9,52 @@ use Hash::Merge;
 
 my $debug = 0;
 my $o_help = 0;
-my $input_dir;
+my @input_dirs;
 my $output_dir;
 
 Getopt::Long::Configure ("bundling");
 GetOptions(
     'd'		=> \$debug,		'debug'		=> \$debug,
     'h'		=> \$o_help,		'help'		=> \$o_help,
-    'O:s'	=> \$output_dir,	'output-dir:s'	=> \$output_dir,
-    'I:s'	=> \$input_dir,		'input-dir:s'	=> \$input_dir,
+    'O:s'	=> \$output_dir,	'output-dir:s'	=> \$output_dir
     );
 
 if ($o_help or ! $output_dir) {
     die (<<EOT);
 
-Syntax : $0 -O dir [options]
+Syntax : $0 -O dir [options] [input-dir ...]
 
     Required options :
 
         -O	output directory
 
-    Optional options :
-
-        -I	input directory (default: output directory)
-
 EOT
 }
 
-$input_dir = $output_dir unless ($input_dir);
+@input_dirs = @ARGV;
+push (@input_dirs, $output_dir) unless (@input_dirs);
 
 die ("$0: Invalid output dir '$output_dir'\n") unless (-d $output_dir);
-die ("$0: Invalid input dir '$input_dir'\n") unless (-d $input_dir);
-
-my @producers = get_producers ($input_dir);
 
 my %hostdata;
 
-foreach my $producer (@producers) {
-    next if ($producer eq 'merge_nerds');	# skip my own output
-    warn ("Loading producer '$producer'...\n") if ($debug);
+foreach my $input_dir (@input_dirs) {
+    die ("$0: Invalid input dir '$input_dir'\n") unless (-d $input_dir);
 
-    my @files = get_nerds_data_files ($input_dir, $producer);
+    my @producers = get_producers ($input_dir);
 
-    my $pd = get_nerds_data_dir ($input_dir, $producer);
+    foreach my $producer (@producers) {
+	next if ($producer eq 'merge_nerds');	# skip my own output
+	warn ("Loading producer '$producer'...\n") if ($debug);
 
-    foreach my $file (@files) {
-	warn ("  file '$file'\n") if ($debug);
-	process_file ("$pd/$file", \%hostdata, $debug);
+	my @files = get_nerds_data_files ($input_dir, $producer);
+
+	my $pd = get_nerds_data_dir ($input_dir, $producer);
+
+	foreach my $file (@files) {
+	    warn ("  file '$file'\n") if ($debug);
+	    process_file ("$pd/$file", \%hostdata, $debug);
+	}
     }
 }
 
