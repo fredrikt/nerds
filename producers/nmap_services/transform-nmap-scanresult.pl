@@ -1,8 +1,5 @@
 #!/usr/bin/env perl
 #
-# $Id$
-# $HeadURL$
-#
 # Read one or more Nmap XML output files and produce NERDS data files
 # for all hosts scanned. 
 #

@@ -1,8 +1,5 @@
 #!/bin/sh
 #
-# $Id$
-# $HeadURL$
-#
 # Nmap scan, and then transform result to NERDS data.
 #
 
