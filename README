@@ -17,10 +17,10 @@ The defined interface of a producer is simple : an executable file named "run.sh
   Producers MUST accept '-O /path/to/output/repo'.
 
   Producers MUST NOT write anywhere in the repo besides in
-    /path/to/repo/producer/$name_of_producer
+    /path/to/repo/producers/$name_of_producer
 
   Producers SHOULD put JSON output in
-    /path/to/repo/producer/$name_of_producer/json
+    /path/to/repo/producers/$name_of_producer/json
 
 All producers must produce JSON-data on the following form:
 
