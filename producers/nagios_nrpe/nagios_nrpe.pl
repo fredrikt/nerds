@@ -15,7 +15,8 @@ my $nrpe_cmd = '/usr/lib/nagios/plugins/check_nrpe';
 
 my @nrpe_checks = ('check_disk',
 		   'check_load',
-		   'check_does_not_exist'
+		   'check_swap',
+		   'check_ntp_time'
     );
 
 Getopt::Long::Configure ("bundling");
@@ -64,7 +65,7 @@ foreach my $host (sort keys %hostdata) {
     my $thishost = $hostdata{$host};
 
     my $json = JSON->new->utf8->pretty (1)->canonical (1)->encode ($thishost);
-    #warn ("JSON output for host '$host' :\n${json}\n\n") if ($debug);
+    warn ("JSON output for host '$host' :\n${json}\n\n") if ($debug);
 
     my $dir = get_nerds_data_dir ($output_dir, 'nagios_nrpe');
     my $fn = "${dir}/${host}..json";
@@ -150,12 +151,17 @@ sub probe_nrpe
     foreach my $check (@{$nrpe_checks_ref}) {
 	warn ("      probing '$check'\n") if ($debug);
 	my $out = `$nrpe_cmd -H $hostname -c $check`;
+	chomp ($out);
 
-	if ($out =~ /^(OK|WARNING|ERROR)/o) {
-	    $$href{'host'}{'version'} = 1;
-	    $$href{'host'}{'name'} = $hostname;
+	if ($out =~ /(OK|WARNING|CRITICAL)/o) {
+	    $$href{$hostname}{'version'} = 1;
+	    $$href{$hostname}{'name'} = $hostname;
 
-	    $$href{'host'}{'nagios_nrpe'}{$check}{'working'} = JSON::true;	    
+	    $$href{$hostname}{'nagios_nrpe'}{$check}{'working'} = JSON::true;	    
+	} elsif ($out =~ /^NRPE: Command .* not defined/o) {
+	    warn ("         - NO\n");
+	} else {
+	    warn ("Unknown output of check_nrpe on $hostname : $out\n");
 	}
     }
 }
