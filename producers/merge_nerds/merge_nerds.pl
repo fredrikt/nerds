@@ -158,26 +158,3 @@ sub process_file
 
     $$href{$hostname} = $t;
 }
-
-sub get_open_ports
-{
-    my $host = shift;
-    my $proto = shift;
-
-    return $host->tcp_open_ports () if ($proto eq 'tcp');
-    return $host->udp_open_ports () if ($proto eq 'udp');
-
-    die ("$0: Unknown protocol '$proto'");
-}
-
-sub get_service
-{
-    my $host = shift;
-    my $proto = shift;
-    my $port = shift;
-
-    return $host->tcp_service ($port) if ($proto eq 'tcp');
-    return $host->udp_service ($port) if ($proto eq 'udp');
-
-    die ("$0: Unknown protocol '$proto'");
-}
