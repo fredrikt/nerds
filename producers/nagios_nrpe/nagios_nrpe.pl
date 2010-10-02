@@ -139,7 +139,7 @@ sub process_file
 			probe_nrpe ($hostname, $href, $nrpe_port, $nrpe_cmd, $nrpe_checks_ref, $debug);
 		    }
 		}
-	    }	    
+	    }
 	}
     }
 }
@@ -154,10 +154,10 @@ sub probe_nrpe
 	chomp ($out);
 
 	if ($out =~ /(OK|WARNING|CRITICAL)/o) {
-	    $$href{$hostname}{'version'} = 1;
-	    $$href{$hostname}{'name'} = $hostname;
+	    $$href{$hostname}{'host'}{'version'} = 1;
+	    $$href{$hostname}{'host'}{'name'} = $hostname;
 
-	    $$href{$hostname}{'nagios_nrpe'}{$check}{'working'} = JSON::true;	    
+	    $$href{$hostname}{'host'}{'nagios_nrpe'}{$check}{'working'} = JSON::true;
 	} elsif ($out =~ /^NRPE: Command .* not defined/o) {
 	    warn ("         - NO\n");
 	} else {
