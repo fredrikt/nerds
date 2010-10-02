@@ -11,3 +11,10 @@ For producers/merge_nerds :
     apt-get install \
     	    libhash-merge-perl \
 	    libjson-perl
+
+
+For producers/nagios_nrpe :
+
+    apt-get install \
+	    libjson-perl \
+	    nagios-nrpe-plugin
