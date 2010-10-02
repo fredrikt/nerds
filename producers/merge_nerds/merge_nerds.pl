@@ -1,5 +1,7 @@
 #!/usr/bin/env perl
 #
+# This producer merges the result of other producers into a single JSON document.
+#
 
 use strict;
 use Getopt::Long;
@@ -43,13 +45,27 @@ foreach my $input_dir (@input_dirs) {
 
     my @producers = get_producers ($input_dir);
 
+    if (! @producers) {
+	# no producers under $input_dir, see if it points directly at some NERDS data files
+
+	my @files = get_nerds_data_files ($input_dir);
+
+	if (@files) {
+	    warn ("Loading files in directory '$input_dir'...\n") if ($debug);
+	}
+
+	foreach my $file (@files) {
+	    warn ("  file '$file'\n") if ($debug);
+	    process_file ("$input_dir/$file", \%hostdata, $debug);
+	}
+    }
+
     foreach my $producer (sort @producers) {
 	next if ($producer eq 'merge_nerds');	# skip my own output
 	warn ("Loading producer '$producer'...\n") if ($debug);
 
-	my @files = get_nerds_data_files ($input_dir, $producer);
-
 	my $pd = get_nerds_data_dir ($input_dir, $producer);
+	my @files = get_nerds_data_files ($pd);
 
 	foreach my $file (@files) {
 	    warn ("  file '$file'\n") if ($debug);
@@ -83,7 +99,7 @@ sub get_producers
     my @producers;
 
     my $dir = "$input_dir/producers/";
-    opendir (DIR, $dir) or die ("$0: Could not opendir '$dir' : $!\n");
+    opendir (DIR, $dir) or return ();
     while (my $t = readdir (DIR)) {
 	next if ($t eq '.');
 	next if ($t eq '..');
@@ -99,12 +115,10 @@ sub get_producers
 
 sub get_nerds_data_files
 {
-    my $input_dir = shift;
-    my $producer = shift;
+    my $dir = shift;
 
     my @files;
 
-    my $dir = get_nerds_data_dir ($input_dir, $producer);
     opendir (DIR, $dir) or die ("$0: Could not opendir '$dir' : $!\n");
     while (my $t = readdir (DIR)) {
 	next unless ($t =~ /.+\.\.json$/oi);
