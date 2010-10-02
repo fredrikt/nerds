@@ -167,8 +167,27 @@ sub process_file
     if ($$href{$hostname}) {
 	warn ("    Merging data for host '$hostname'\n") if ($debug);
 	my $merged = Hash::Merge::merge ($$href{$hostname}, $t);
+
+	# Manually fix duplication of content of (known) lists - Hash::Merge
+	# could probably be instructed to not just concatenate these lists, but
+	# it wasn't immediately obvious to me.
+	make_uniq ($$merged{'host'}{'addrs'});
+	make_uniq ($$merged{'host'}{'hostnames'});
+
 	$t = $merged;
     }
 
     $$href{$hostname} = $t;
+}
+
+sub make_uniq
+{
+    my $lref = shift;
+
+    my %hash;
+    foreach my $t (@{$lref}) {
+	$hash{$t} = 1;
+    }
+
+    @{$lref} = sort keys (%hash);
 }
