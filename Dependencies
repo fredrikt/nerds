@@ -1,7 +1,9 @@
 For producers/nmap_services :
 
     apt-get install \
-  	  libnmap-parser-perl
+    	    libjson-perl \
+	    libnmap-parser-perl \
+	    nmap
 
 
 For producers/merge_nerds :
@@ -9,3 +11,10 @@ For producers/merge_nerds :
     apt-get install \
     	    libhash-merge-perl \
 	    libjson-perl
+
+
+For producers/nagios_nrpe :
+
+    apt-get install \
+	    libjson-perl \
+	    nagios-nrpe-plugin
