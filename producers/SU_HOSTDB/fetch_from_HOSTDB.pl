@@ -176,8 +176,8 @@ sub process_file
 	my %res;
 
 	# mandatory basic NERDS data for a host
-	$$href{$hostname}{'host'}{'version'} = 1;
-	$$href{$hostname}{'host'}{'name'} = $hostname;
+	$res{'host'}{'version'} = 1;
+	$res{'host'}{'name'} = $hostname;
 
 	foreach my $host (@hosts) {
 	    push (@{$res{'host'}{'hostnames'}}, $host->hostname ());
