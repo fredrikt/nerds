@@ -170,11 +170,15 @@ sub process_file
 	die ("$0: Can't interpret NERDS data of version '$nerds_version' in file '$file'\n");
     }
 
-    my %res;
-
     my @hosts = $hostdb->findhostbyname ($hostname);
 
     if (@hosts) {
+	my %res;
+
+	# mandatory basic NERDS data for a host
+	$$href{$hostname}{'host'}{'version'} = 1;
+	$$href{$hostname}{'host'}{'name'} = $hostname;
+
 	foreach my $host (@hosts) {
 	    push (@{$res{'host'}{'hostnames'}}, $host->hostname ());
 	    push (@{$res{'host'}{'addrs'}}, $host->ip ());
@@ -212,13 +216,14 @@ sub process_file
 	    # Comment is probably not SU-specific information about hosts.
 	    $res{'host'}{'comment'} = $comment if ($comment and ! $res{'host'}{'comment'});
 	}
+
+
+	my $res_ref = \%res;
+	make_uniq ($$res_ref{'host'}{'addrs'});
+	make_uniq ($$res_ref{'host'}{'hostnames'});
+	
+	$$href{$hostname} = $res_ref;
     }
-
-    my $res_ref = \%res;
-    make_uniq ($$res_ref{'host'}{'addrs'});
-    make_uniq ($$res_ref{'host'}{'hostnames'});
-
-    $$href{$hostname} = $res_ref;
 }
 
 sub make_uniq
