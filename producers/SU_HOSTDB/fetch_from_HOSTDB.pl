@@ -215,8 +215,21 @@ sub process_file
 	    # Store first found comment as commend on the NERD host level.
 	    # Comment is probably not SU-specific information about hosts.
 	    $res{'host'}{'comment'} = $comment if ($comment and ! $res{'host'}{'comment'});
-	}
 
+	    my $subnet = $hostdb->findsubnetbyip ($host->ip ());
+	    if ($subnet) {
+		my $name = $subnet->netaddr () . '/' . $subnet->slashnotation ();
+		my $subnet_id = $subnet->id ();
+
+		$res{'host'}{$MYNAME}{'host'}{$id}{'subnet'}{'id'} = $subnet_id;
+
+		# Store basic information about the subnet too. Very useful in monitoring applications.
+		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'name'} = $name;
+		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'id'} = $subnet->id ();
+		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'description'} = $subnet->description ();
+		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'owner'} = $subnet->owner ();
+	    }
+	}
 
 	my $res_ref = \%res;
 	make_uniq ($$res_ref{'host'}{'addrs'});
