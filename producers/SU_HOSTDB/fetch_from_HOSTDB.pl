@@ -225,7 +225,6 @@ sub process_file
 
 		# Store basic information about the subnet too. Very useful in monitoring applications.
 		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'name'} = $name;
-		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'id'} = $subnet->id ();
 		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'description'} = $subnet->description ();
 		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'owner'} = $subnet->owner ();
 	    }
