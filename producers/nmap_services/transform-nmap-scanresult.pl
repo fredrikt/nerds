@@ -91,7 +91,6 @@ sub process_file
 	$$href{$hostname}{'host'}{'version'} = 1;
 
 	$$href{$hostname}{'host'}{'name'} = $hostname;
-	$$href{$hostname}{'host'}{'status'} = $host->status ();
 	@{$$href{$hostname}{'host'}{'addrs'}} = $host->addr ();
 	@{$$href{$hostname}{'host'}{'hostnames'}} = $host->all_hostnames ();
 
