@@ -18,6 +18,7 @@ use Nmap::Parser;
 use Data::Dumper;
 use JSON;
 
+my $MYNAME = 'nmap_services';
 my $debug = 0;
 my $o_help = 0;
 my $output_dir;
@@ -97,8 +98,11 @@ sub process_file
 	# OS signature
 	my $os = $host->os_sig ();
 	if ($os->name () or $os->family ()) {
-	    $$href{$hostname}{'host'}{'os'}{'name'} = $os->name ();
-	    $$href{$hostname}{'host'}{'os'}{'family'} = $os->family ();
+	    # The correctness of nmap OS fingerprinting is not in par with for example
+	    # having your servers report their current operating system level. We therefor
+	    # put this data under $MYNAME instead of directly under the host.
+	    $$href{$hostname}{'host'}{$MYNAME}{'os'}{'name'} = $os->name ();
+	    $$href{$hostname}{'host'}{$MYNAME}{'os'}{'family'} = $os->family ();
 	}
 
 	# now, record open ports under a host+addr key to later be able to extend
