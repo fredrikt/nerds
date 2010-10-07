@@ -250,7 +250,7 @@ sub process_file
 		my $name = $subnet->netaddr () . '/' . $subnet->slashnotation ();
 		my $subnet_id = $subnet->id ();
 
-		$res{'host'}{$MYNAME}{'host'}{$id}{'subnet'}{'id'} = $subnet_id;
+		$res{'host'}{$MYNAME}{'host'}{$id}{'subnet_id'} = $subnet_id;
 
 		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'name'} = $name;
 		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'description'} = $subnet->description ();
