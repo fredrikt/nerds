@@ -174,6 +174,13 @@ sub process_file
 	make_uniq ($$merged{'host'}{'addrs'});
 	make_uniq ($$merged{'host'}{'hostnames'});
 
+	# clean out some cruft from early development
+	if ($$merged{'host'}{'os'}{'family'}) {
+	    # nmap_services
+	    delete ($merged->{'host'}{'os'});
+	    delete ($merged->{'host'}{'status'});
+	}
+
 	$t = $merged;
     }
 
