@@ -216,6 +216,35 @@ sub process_file
 	    # Comment is probably not SU-specific information about hosts.
 	    $res{'host'}{'comment'} = $comment if ($comment and ! $res{'host'}{'comment'});
 
+	    # Get any host aliases
+	    my @aliases = $host->init_aliases ();
+	    if (@aliases) {
+		my @alias_ids;
+		foreach my $alias (@aliases) {
+		    my %aliasinfo;
+
+		    my $aid = $alias->id ();
+
+		    $aliasinfo{'aliasname'}	= $alias->aliasname ();
+		    $aliasinfo{'ttl'}		= $alias->ttl ();
+		    $aliasinfo{'dnszone'}	= $alias->dnszone ();
+		    $aliasinfo{'dnsstatus'}	= $alias->dnsstatus ();
+		    $aliasinfo{'comment'}	= $alias->comment ();
+
+		    push (@alias_ids, $aid);
+
+		    foreach my $key (sort keys %aliasinfo) {
+			my $value = $aliasinfo{$key};
+			next unless $value;
+
+			$res{'host'}{$MYNAME}{'alias'}{$aid}{$key} = $value;
+		    }
+		}
+
+		@{$res{'host'}{$MYNAME}{'host'}{$id}{'aliases'}} = @alias_ids;
+	    }
+
+	    # Store basic information about the subnet too. Very useful in monitoring applications.
 	    my $subnet = $hostdb->findsubnetbyip ($host->ip ());
 	    if ($subnet) {
 		my $name = $subnet->netaddr () . '/' . $subnet->slashnotation ();
@@ -223,7 +252,6 @@ sub process_file
 
 		$res{'host'}{$MYNAME}{'host'}{$id}{'subnet'}{'id'} = $subnet_id;
 
-		# Store basic information about the subnet too. Very useful in monitoring applications.
 		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'name'} = $name;
 		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'description'} = $subnet->description ();
 		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'owner'} = $subnet->owner ();
