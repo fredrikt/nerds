@@ -210,7 +210,7 @@ sub process_file
 
 	    foreach my $key (sort keys %hostinfo) {
 		my $value = $hostinfo{$key};
-		next unless $value;
+		next unless (defined ($value));
 
 		$res{'host'}{$MYNAME}{'host'}{$id}{$key} = $value;
 	    }
@@ -240,7 +240,7 @@ sub process_file
 
 		    foreach my $key (sort keys %aliasinfo) {
 			my $value = $aliasinfo{$key};
-			next unless $value;
+			next unless (defined ($value));
 
 			$res{'host'}{$MYNAME}{'alias'}{$aid}{$key} = $value;
 		    }
