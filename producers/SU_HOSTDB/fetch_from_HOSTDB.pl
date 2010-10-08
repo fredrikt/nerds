@@ -71,7 +71,7 @@ foreach my $input_dir (@input_dirs) {
 	warn ("Loading producer '$producer'...\n") if ($debug);
 
 	my $pd = get_nerds_data_dir ($input_dir, $producer);
-	my @files = get_nerds_data_files ($pd, $hostdb);
+	my @files = get_nerds_data_files ($pd);
 
 	foreach my $file (@files) {
 	    warn ("  file '$file'\n") if ($debug);
