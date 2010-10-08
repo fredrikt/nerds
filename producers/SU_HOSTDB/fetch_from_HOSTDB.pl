@@ -80,7 +80,7 @@ foreach my $input_dir (@input_dirs) {
     }
 }
 
-# break up the union of all scan files into an XML blob per host
+# output a JSON document for every host in %hostdata
 foreach my $host (sort keys %hostdata) {
     my $thishost = $hostdata{$host};
 
@@ -98,6 +98,7 @@ foreach my $host (sort keys %hostdata) {
 exit (0);
 
 
+# Get a list of all producers under $input_dir/producers/
 sub get_producers
 {
     my $input_dir = shift;
@@ -119,6 +120,8 @@ sub get_producers
     return @producers;
 }
 
+# Get a list of all potential NERDS data files in a directory. Does not
+# actually parse them to verify they are NERDS data files.
 sub get_nerds_data_files
 {
     my $dir = shift;
@@ -146,6 +149,8 @@ sub get_nerds_data_dir
     return "$repo/producers/$producer/json";
 }
 
+# Read and parse a potential NERDS data file. If it was a valid NERDS data file,
+# we fetch info from HOSTDB for the host in question, and store all that info in $href.
 sub process_file
 {
     my $file = shift;
@@ -266,6 +271,7 @@ sub process_file
     }
 }
 
+# `sort | uniq` of a list reference
 sub make_uniq
 {
     my $lref = shift;
