@@ -55,11 +55,11 @@ foreach my $input_dir (@input_dirs) {
 
 	if (@files) {
 	    warn ("Loading files in directory '$input_dir'...\n") if ($debug);
-	}
 
-	foreach my $file (@files) {
-	    warn ("  file '$file'\n") if ($debug);
-	    process_file ("$input_dir/$file", \%hostdata, $debug, $cfgstore_dir);
+	    foreach my $file (@files) {
+		warn ("  file '$file'\n") if ($debug);
+		process_file ("$input_dir/$file", \%hostdata, $debug, $cfgstore_dir);
+	    }
 	}
     }
 
@@ -155,7 +155,7 @@ sub process_file
     my $cfgstore_dir = shift;
 
     open (IN, "< $file") or die ("$0: Could not open '$file' for reading : $!\n");
-    my $json = join ("", <IN>);
+    my $json = join ('', <IN>);
     close (IN);
 
     my $t;
@@ -171,7 +171,7 @@ sub process_file
 	die ("$0: Can't interpret NERDS data of version '$nerds_version' in file '$file'\n");
     }
 
-    my $cfgstore_file = get_most_recent_hostinfo_file ($cfgstore_dir, $hostname);
+    my $cfgstore_file = get_most_recent_hostinfo_file ("${cfgstore_dir}/${hostname}", $hostname);
 
     if ($cfgstore_file) {
 	my %res;
@@ -196,7 +196,7 @@ sub process_file
 		} elsif ($t =~ /^\s*No/io) {
 		    $info{'is_virtual'} = JSON::false ();
 		} elsif ($t =~ /^\s*Probably not/o) {
-		    # this could be made unkown in the future by not setting $is_virtual but providing $virtual_info
+		    # this could be made "unknown" in the future by not setting $is_virtual but providing $virtual_info
 		    $info{'is_virtual'} = JSON::false ();
 		}
 
@@ -207,7 +207,7 @@ sub process_file
 
 	    foreach my $key (sort keys %info) {
 		my $value = $info{$key};
-		next unless $value;
+		next unless (defined ($value));
 
 		$res{'host'}{$MYNAME}{$key} = $value;
 	    }
@@ -216,6 +216,8 @@ sub process_file
 	close (CFG);
 
 	$$href{$hostname} = \%res;
+    } else {
+	warn ("Found no cfgstore data for host '$hostname' in '$cfgstore_dir'\n") if ($debug);
     }
 }
 
@@ -236,7 +238,7 @@ sub get_most_recent_hostinfo_file {
     my $dir = shift;
     my $hostname = shift;
 
-    opendir (DIR, $dir) or die ("$0: Can't opendir host directory '$dir' : $!\n");
+    opendir (DIR, $dir) or return undef;
     # get all files of format hostname_2009-04-03_15h55m
     my @candidates = grep { /^${hostname}_\d\d\d\d-\d\d-\d\d_\d\dh\d\dm$/ && -f "$dir/$_" } readdir(DIR);
     closedir (DIR);
