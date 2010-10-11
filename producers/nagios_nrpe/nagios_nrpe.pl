@@ -16,6 +16,7 @@ my $nrpe_cmd = '/usr/lib/nagios/plugins/check_nrpe';
 my @nrpe_checks = ('check_disk',
 		   'check_load',
 		   'check_swap',
+		   'check_sensor',
 		   'check_ntp_time'
     );
 
