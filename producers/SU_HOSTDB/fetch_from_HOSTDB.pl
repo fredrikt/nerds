@@ -185,6 +185,9 @@ sub process_file
 	$res{'host'}{'name'} = $hostname;
 
 	foreach my $host (@hosts) {
+	    if (! $host) {
+		warn ("HOSTDB findhostbyname '$hostname' returned non-host result : " . Dumper (\@hosts) . "\n");
+	    }
 	    push (@{$res{'host'}{'hostnames'}}, $host->hostname ());
 	    push (@{$res{'host'}{'addrs'}}, $host->ip ());
 
