@@ -1,14 +1,10 @@
 Network Enterprise Resource Discovery System
 
-This is a collaborative effort between initially NorduNET and Stockholm university
-to collect reusable data about "stuff" on our networks.
+This is a collaborative effort between initially NORDUnet and Stockholm University to collect reusable data about "stuff" on our networks.
 
-The basic idea is to have producers that discover things about your "stuff" and
-store it in a loosly specified format (currently JSON based).
+The basic idea is to have producers that discover things about your "stuff" and store it in a loosly specified format (currently JSON based).
 
-After that, you can build consumers of that data that do something valuable to you,
-for example generate monitoring system configuration for all services you discovered
-when scanning your server networks.
+After that, you can build consumers of that data that do something valuable to you, for example generate monitoring system configuration for all services you discovered when scanning your server networks.
 
 The defined interface of a producer is simple : an executable file named "run.sh".
 
