@@ -175,6 +175,10 @@ sub process_file
 	die ("$0: Can't interpret NERDS data of version '$nerds_version' in file '$file'\n");
     }
 
+    unless ($hostdb->is_valid_fqdn ($hostname)) {
+	die ("$0: Bad hostname '$hostname' in NERDS data file '$file'\n");
+    }
+
     my @hosts = $hostdb->findhostbyname ($hostname);
 
     if (@hosts) {
@@ -186,7 +190,7 @@ sub process_file
 
 	foreach my $host (@hosts) {
 	    if (! $host) {
-		warn ("HOSTDB findhostbyname '$hostname' returned non-host result : " . Dumper (\@hosts) . "\n");
+		warn ("HOSTDB findhostbyname '$hostname' returned non-host result : " . Dumper (\@hosts) . "\n  (JSON file '$file')\n");
 	    }
 	    push (@{$res{'host'}{'hostnames'}}, $host->hostname ());
 	    push (@{$res{'host'}{'addrs'}}, $host->ip ());
