@@ -18,6 +18,7 @@ use Nmap::Parser;
 use Data::Dumper;
 use JSON;
 
+my $MYNAME = 'nmap_services';
 my $debug = 0;
 my $o_help = 0;
 my $output_dir;
@@ -85,21 +86,31 @@ sub process_file
     foreach my $host ($np->all_hosts ('up')) {
 	my $hostname = $host->hostname ();
 
+	if (! $hostname) {
+	    # Unresolvable host. NERDS data is required to have a hostname or other unique identifier
+	    # in {host}{name}. Creating a UUID or similar might be a way to include non-resolvable
+	    # hosts in the result.
+	    warn ("WARNING: Skipping unresolvable host with address '" . $host->addr () . "'\n");
+	    next;
+	}
+
 	warn ("Processing $hostname\n") if ($debug);
 
 	# NERDS data format version
 	$$href{$hostname}{'host'}{'version'} = 1;
 
 	$$href{$hostname}{'host'}{'name'} = $hostname;
-	$$href{$hostname}{'host'}{'status'} = $host->status ();
 	@{$$href{$hostname}{'host'}{'addrs'}} = $host->addr ();
 	@{$$href{$hostname}{'host'}{'hostnames'}} = $host->all_hostnames ();
 
 	# OS signature
 	my $os = $host->os_sig ();
 	if ($os->name () or $os->family ()) {
-	    $$href{$hostname}{'host'}{'os'}{'name'} = $os->name ();
-	    $$href{$hostname}{'host'}{'os'}{'family'} = $os->family ();
+	    # The correctness of nmap OS fingerprinting is not in par with for example
+	    # having your servers report their current operating system level. We therefor
+	    # put this data under $MYNAME instead of directly under the host.
+	    $$href{$hostname}{'host'}{$MYNAME}{'os'}{'name'} = $os->name ();
+	    $$href{$hostname}{'host'}{$MYNAME}{'os'}{'family'} = $os->family ();
 	}
 
 	# now, record open ports under a host+addr key to later be able to extend
