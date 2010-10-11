@@ -86,6 +86,14 @@ sub process_file
     foreach my $host ($np->all_hosts ('up')) {
 	my $hostname = $host->hostname ();
 
+	if (! $hostname) {
+	    # Unresolvable host. NERDS data is required to have a hostname or other unique identifier
+	    # in {host}{name}. Creating a UUID or similar might be a way to include non-resolvable
+	    # hosts in the result.
+	    warn ("WARNING: Skipping unresolvable host with address '" . $host->addr () . "'\n");
+	    next;
+	}
+
 	warn ("Processing $hostname\n") if ($debug);
 
 	# NERDS data format version
