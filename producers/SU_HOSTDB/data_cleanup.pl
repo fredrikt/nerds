@@ -158,6 +158,10 @@ sub process_file
 	delete ($t->{'host'}{$MYNAME}{'host'}{$id}{'subnet'});
     }
 
+    # cruft from early development of nmap_services
+    delete ($t->{'host'}{'os'});
+    delete ($t->{'host'}{'status'});
+
     $$href{$hostname} = $t;
 }
 
