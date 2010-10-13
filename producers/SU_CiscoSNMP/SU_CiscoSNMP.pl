@@ -320,7 +320,7 @@ sub process_file
 
     my $hostname = $$t{'host'}{'name'};
 
-    if ($$hosts_ref{$hostname}) {
+    if ($$href{$hostname}) {
 	warn ("Host '$hostname' already scanned.\n") if ($debug);
 	return undef;
     }
