@@ -173,16 +173,27 @@ if ($devicenets_fn) {
 
 my %hostdata;
 
+my @files;
+
 foreach my $input_dir (@input_dirs) {
     die ("$0: Invalid input dir '$input_dir'\n") unless (-d $input_dir);
 
-    my @files = get_nerds_data_files ($input_dir);
+    @files = get_producers_files ($input_dir);
+    if (! @files) {
+	# no producers under $input_dir, see if it points directly at some NERDS data files
 
-    foreach my $file (sort @files) {
-	warn ("  file '$file'\n") if ($debug);
-	process_file ("$input_dir/$file", \%hostdata, \@device_networks, $debug, $community,
-		      \@host_info, \%checks, \%oid2name, \%name2oid) ;
+	@files = get_nerds_data_files ($input_dir);
+
+	if (@files) {
+	    warn ("Loading files in directory '$input_dir'...\n") if ($debug);
+	}
     }
+}
+
+foreach my $file (@files) {
+    warn ("  file '$file'\n") if ($debug);
+    process_file ("$file", \%hostdata, \@device_networks, $debug, $community,
+		  \@host_info, \%checks, \%oid2name, \%name2oid) ;
 }
 
 # break up the union of all scan files into an XML blob per host
@@ -202,6 +213,55 @@ foreach my $host (sort keys %hostdata) {
 
 exit (0);
 
+#
+# SUBROUTINES
+#
+
+
+# Recurse into $input_dir, collecting all NERDS data files for each
+# producer found therein.
+sub get_producers_files
+{
+    my $input_dir = shift;
+
+    my @producers = get_producers ($input_dir);
+
+    my @res;
+
+    foreach my $producer (sort @producers) {
+	warn ("Loading producer '$producer'...\n") if ($debug);
+
+	my $pd = get_nerds_data_dir ($input_dir, $producer);
+
+	foreach my $file (get_nerds_data_files ($pd)) {
+	    push (@res, "$pd/$file");
+	}
+    }
+
+    return @res;
+}
+
+# Get a list of all producers under $input_dir/producers/
+sub get_producers
+{
+    my $input_dir = shift;
+
+    my @producers;
+
+    my $dir = "$input_dir/producers/";
+    opendir (DIR, $dir) or return ();
+    while (my $t = readdir (DIR)) {
+	next if ($t eq '.');
+	next if ($t eq '..');
+	next unless (-d "$input_dir/producers/$t");
+
+	push (@producers, $t);
+    }
+
+    closedir (DIR);
+
+    return @producers;
+}
 
 sub get_nerds_data_files
 {
