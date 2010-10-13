@@ -320,6 +320,11 @@ sub process_file
 
     my $hostname = $$t{'host'}{'name'};
 
+    if ($$hosts_ref{$hostname}) {
+	warn ("Host '$hostname' already scanned.\n") if ($debug);
+	return undef;
+    }
+
     my $do_scan = 0;
 
     # Check if subnet of this host is one of our network device networks
