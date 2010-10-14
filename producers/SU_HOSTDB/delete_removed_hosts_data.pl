@@ -47,10 +47,14 @@ foreach my $input_dir (@input_dirs) {
     if (! @files) {
 	# no producers under $input_dir, see if it points directly at some NERDS data files
 
-	@files = get_nerds_data_files ($input_dir);
+	my @t_files = get_nerds_data_files ($input_dir);
 
-	if (@files) {
+	if (@t_files) {
 	    warn ("Loading files in directory '$input_dir'...\n") if ($debug);
+
+	    foreach my $file (@t_files) {
+		push (@files, "$input_dir/$file");
+	    }
 	}
     }
 }
