@@ -332,9 +332,11 @@ sub process_file
 	my $subnet = $$t{'host'}{'SU_HOSTDB'}{'subnet'}{$subnet_id}{'name'};
 	my ($t_subnet) = grep { /^${subnet}$/ } @{$devicenets_ref};
 	if ($t_subnet) {
-	    warn ("$hostname is on a known network device subnet : $t_subnet\n");
+	    warn ("$hostname is on a known network device subnet : $t_subnet\n") if ($debug);
 	    $do_scan = 1;
 	    last;
+	} else {
+	    warn ("    Subnet $subnet not found in list : " . join (', ', @{$devicenets_ref}) . "\n") if ($debug);
 	}
     }
 
@@ -347,6 +349,7 @@ sub process_file
 			if ($$t{'host'}{'services'}{$family}{$addr}{$proto}{$port}{'product'} =~ /Cisco/io) {
 			    warn ("$hostname:$port looks like a Cisco service\n") if ($debug);
 			    $do_scan = 1;
+			    last;
 			}
 		    }
 		}
