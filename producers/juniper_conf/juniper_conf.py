@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#       untitled.py
+#       juniper_conf.py
 #       
 #       Copyright 2010 Erik Nihlén <erik@nordu.net>
 #       
@@ -23,6 +23,12 @@
 from xml.dom import minidom
 import sys
 import json
+import argparse
+
+'''
+If you have Python <2.7 you need to install argparse manually.
+'''
+
 
 class Router:
 	def __init__(self):
@@ -145,15 +151,61 @@ def parse(xmldoc):
 				
 				tempInterface.unitdict.append({'unit': unittemp, 'name': desctemp, 'vlanid': vlanidtemp, 'address': nametemp})
 			listofinterfaces.append(tempInterface)
-			#print listofinterfaces
 	router.interfaces = listofinterfaces
 	return router
 
-
+def get_remote_conf(host):
+	import pexpect
+	
 			
 
 def main():
-	conflist = ['se-tug-xml', 'se-fre-xml', 'se-tug2-xml']
+	# User friendly usage output
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-O', nargs='?', help='Path to output directory.')
+	parser.add_argument('-N', action='store_true',
+		help='Don\'t write output to disk.')
+	parser.add_argument('-L', nargs='?', help='Path to local file with\
+list of the config files.')
+	parser.add_argument('-R', nargs='?', help='Path to local file with\
+list of host names.')
+	args = parser.parse_args()
+	
+	if args.L != '':
+		pass
+	if args.R != '':
+		try:
+			f = open(args.R)
+			xmldoc = []
+			for host in f:
+				xmldocs.append(get_remote_conf(host))
+				
+		except IOError as (errno, strerror):
+			print "I/O error({0}): {1}".format(errno, strerror)
+		
+	
+	# Output directory should be ./json/ if nothing else is specified
+	out_dir = './json/'
+
+	if args.N is True:
+		print out
+	else:
+		if args.O:
+			out_dir = args.O
+		if out_dir[-1] != '/': # Pad with / if user provides a broken path
+			out_dir += '/'
+		try:
+			try:
+				f = open('%s%s' % (out_dir, hostn), 'w')
+			except IOError:
+				os.mkdir(out_dir) # The directory to write in must exist
+				f = open('%s%s' % (out_dir, hostn), 'w')
+			f.write(out)
+			f.close()
+		except IOError as (errno, strerror):
+			print "I/O error({0}): {1}".format(errno, strerror)
+	
+	#conflist = ['se-tug-xml', 'se-fre-xml', 'se-tug2-xml']
 	routerlist = []
 	for item in conflist:
 		xmldoc = minidom.parse(item)
@@ -164,13 +216,6 @@ def main():
 		out = json.dumps(template, sort_keys=False, indent=4)
 		print out
 
-		#print item.name
-		#print item.interfaces
-		#for interface in item.interfaces:	
-			#print interface.name	
-			#print interface.desc
-			#for stuff in interface.unitdict:
-				#print stuff
 			
 			
 		
