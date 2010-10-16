@@ -192,89 +192,108 @@ sub process_file
 	    if (! $host) {
 		warn ("HOSTDB findhostbyname '$hostname' returned non-host result : " . Dumper (\@hosts) . "\n  (JSON file '$file')\n");
 	    }
-	    push (@{$res{'host'}{'hostnames'}}, $host->hostname ());
-	    push (@{$res{'host'}{'addrs'}}, $host->ip ());
 
-	    my %hostinfo;
-	    my $id = $host->id ();
+	    store_host_data (\%res, $host, $hostdb);
 
-	    $hostinfo{'parent'}		= $host->partof ();
-	    $hostinfo{'ip'}		= $host->ip ();
-	    $hostinfo{'mac'}		= $host->mac_address ();
-	    $hostinfo{'hostname'}	= $host->hostname ();
-	    $hostinfo{'comment'}	= $host->comment ();
-	    $hostinfo{'owner'}		= $host->owner ();
-	    $hostinfo{'dhcpstatus'}	= $host->dhcpstatus ();
-	    $hostinfo{'dhcpmode'}	= $host->dhcpmode ();
-	    $hostinfo{'dnsstatus'}	= $host->dnsstatus ();
-	    $hostinfo{'dnsmode'}	= $host->dnsmode ();
-	    $hostinfo{'ttl'}		= $host->ttl ();
-	    $hostinfo{'profile'}	= $host->profile ();
-	    $hostinfo{'zone'}		= $host->dnszone ();
-	    $hostinfo{'manual_zone'}	= $host->manual_dnszone ();
-	    # not included because it changes
-	    #$hostinfo{'mac_ts'}		= $host->mac_address_ts ();
-
-	    foreach my $key (sort keys %hostinfo) {
-		my $value = $hostinfo{$key};
-		next unless (defined ($value));
-
-		$res{'host'}{$MYNAME}{'host'}{$id}{$key} = $value;
-	    }
-
-	    my $comment = $host->comment ();
-
-	    # Store first found comment as commend on the NERD host level.
-	    # Comment is probably not SU-specific information about hosts.
-	    $res{'host'}{'comment'} = $comment if ($comment and ! $res{'host'}{'comment'});
-
-	    # Get any host aliases
-	    my @aliases = $host->init_aliases ();
-	    if (@aliases) {
-		my @alias_ids;
-		foreach my $alias (@aliases) {
-		    my %aliasinfo;
-
-		    my $aid = $alias->id ();
-
-		    $aliasinfo{'aliasname'}	= $alias->aliasname ();
-		    $aliasinfo{'ttl'}		= $alias->ttl ();
-		    $aliasinfo{'dnszone'}	= $alias->dnszone ();
-		    $aliasinfo{'dnsstatus'}	= $alias->dnsstatus ();
-		    $aliasinfo{'comment'}	= $alias->comment ();
-
-		    push (@alias_ids, $aid);
-
-		    foreach my $key (sort keys %aliasinfo) {
-			my $value = $aliasinfo{$key};
-			next unless (defined ($value));
-
-			$res{'host'}{$MYNAME}{'alias'}{$aid}{$key} = $value;
-		    }
+	    if ($host->partof ()) {
+		my $parent = $hostdb->findhostbyid ($host->partof ());
+		if ($parent) {
+		    store_host_data (\%res, $parent, $hostdb);
+		} else {
+		    warn ("WARNING: Host " . $host->id () . " is partof host " . $host->partof () . " but I could not find that host!\n");
 		}
-
-		@{$res{'host'}{$MYNAME}{'host'}{$id}{'aliases'}} = @alias_ids;
-	    }
-
-	    # Store basic information about the subnet too. Very useful in monitoring applications.
-	    my $subnet = $hostdb->findsubnetbyip ($host->ip ());
-	    if ($subnet) {
-		my $name = $subnet->netaddr () . '/' . $subnet->slashnotation ();
-		my $subnet_id = $subnet->id ();
-
-		$res{'host'}{$MYNAME}{'host'}{$id}{'subnet_id'} = $subnet_id;
-
-		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'name'} = $name;
-		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'description'} = $subnet->description ();
-		$res{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'owner'} = $subnet->owner ();
 	    }
 	}
 
 	my $res_ref = \%res;
 	make_uniq ($$res_ref{'host'}{'addrs'});
 	make_uniq ($$res_ref{'host'}{'hostnames'});
-	
+
 	$$href{$hostname} = $res_ref;
+    }
+}
+
+sub store_host_data
+{
+    my $res_ref = shift;
+    my $host = shift;
+    my $hostdb = shift;
+
+    push (@{$$res_ref{'host'}{'hostnames'}}, $host->hostname ());
+    push (@{$$res_ref{'host'}{'addrs'}}, $host->ip ());
+
+    my %hostinfo;
+    my $id = $host->id ();
+
+    $hostinfo{'parent'}		= $host->partof ();
+    $hostinfo{'ip'}		= $host->ip ();
+    $hostinfo{'mac'}		= $host->mac_address ();
+    $hostinfo{'hostname'}	= $host->hostname ();
+    $hostinfo{'comment'}	= $host->comment ();
+    $hostinfo{'owner'}		= $host->owner ();
+    $hostinfo{'dhcpstatus'}	= $host->dhcpstatus ();
+    $hostinfo{'dhcpmode'}	= $host->dhcpmode ();
+    $hostinfo{'dnsstatus'}	= $host->dnsstatus ();
+    $hostinfo{'dnsmode'}	= $host->dnsmode ();
+    $hostinfo{'ttl'}		= $host->ttl ();
+    $hostinfo{'profile'}	= $host->profile ();
+    $hostinfo{'zone'}		= $host->dnszone ();
+    $hostinfo{'manual_zone'}	= $host->manual_dnszone ();
+    # not included because it changes
+    #$hostinfo{'mac_ts'}		= $host->mac_address_ts ();
+
+    foreach my $key (sort keys %hostinfo) {
+	my $value = $hostinfo{$key};
+	next unless (defined ($value));
+
+	$$res_ref{'host'}{$MYNAME}{'host'}{$id}{$key} = $value;
+    }
+
+    my $comment = $host->comment ();
+
+    # Store first found comment as commend on the NERD host level.
+    # Comment is probably not SU-specific information about hosts.
+    $$res_ref{'host'}{'comment'} = $comment if ($comment and ! $$res_ref{'host'}{'comment'});
+
+    # Get any host aliases
+    my @aliases = $host->init_aliases ();
+    if (@aliases) {
+	my @alias_ids;
+	foreach my $alias (@aliases) {
+	    my %aliasinfo;
+
+	    my $aid = $alias->id ();
+
+	    $aliasinfo{'aliasname'}	= $alias->aliasname ();
+	    $aliasinfo{'ttl'}		= $alias->ttl ();
+	    $aliasinfo{'dnszone'}	= $alias->dnszone ();
+	    $aliasinfo{'dnsstatus'}	= $alias->dnsstatus ();
+	    $aliasinfo{'comment'}	= $alias->comment ();
+
+	    push (@alias_ids, $aid);
+
+	    foreach my $key (sort keys %aliasinfo) {
+		my $value = $aliasinfo{$key};
+		next unless (defined ($value));
+
+		$$res_ref{'host'}{$MYNAME}{'alias'}{$aid}{$key} = $value;
+	    }
+	}
+
+	@{$$res_ref{'host'}{$MYNAME}{'host'}{$id}{'aliases'}} = @alias_ids;
+    }
+
+    # Store basic information about the subnet too. Very useful in monitoring applications.
+    my $subnet = $hostdb->findsubnetbyip ($host->ip ());
+    if ($subnet) {
+	my $name = $subnet->netaddr () . '/' . $subnet->slashnotation ();
+	my $subnet_id = $subnet->id ();
+
+	$$res_ref{'host'}{$MYNAME}{'host'}{$id}{'subnet_id'} = $subnet_id;
+
+	$$res_ref{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'name'} = $name;
+	$$res_ref{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'description'} = $subnet->description ();
+	$$res_ref{'host'}{$MYNAME}{'subnet'}{$subnet_id}{'owner'} = $subnet->owner ();
     }
 }
 
