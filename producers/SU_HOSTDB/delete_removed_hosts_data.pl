@@ -198,25 +198,25 @@ sub process_file
     # list all files for a host in an array
     push (@{$$hostdata_ref{$hostname}{'files'}}, $file);
 
-    if ($$t{'host'}{'SU_HOSTDB'}) {
+    my $host = $hostdb->findhostbyname ($hostname);
+
+    if ($$t{'host'}{'SU_HOSTDB'} and $host) {
 	# This file has SU_HOSTDB data in it, check if host still exists in HOSTDB.
 
-	my $host = $hostdb->findhostbyname ($hostname);
-
-	if ($host) {
-	    # Check that hostdb ID still matches, and warn if it does not
-	    my $id = $host->id ();
-	    my $nerds_id = get_host_id ($t, $hostname);
-	    
-	    if ($id != $nerds_id) {
-		warn ("WARNING: Host $hostname has ID $id in HOSTDB, but $nerds_id in $file\n");
-	    } else {
-		warn ("OK: $file\n") if ($debug);
-	    }
+	# Check that hostdb ID still matches, and warn if it does not
+	my $id = $host->id ();
+	my $nerds_id = get_host_id ($t, $hostname);
+	
+	if ($id != $nerds_id) {
+	    warn ("WARNING: Host $hostname has ID $id in HOSTDB, but $nerds_id in $file\n");
 	} else {
-	    warn ("HOST $hostname REMOVED\n");
-	    $$hostdata_ref{$hostname}{'status'} = 'REMOVED';
+	    warn ("OK: $file\n") if ($debug);
 	}
+    }
+
+    if (! $host) {
+	warn ("HOST $hostname REMOVED\n");
+	$$hostdata_ref{$hostname}{'status'} = 'REMOVED';
     }
 }
 
