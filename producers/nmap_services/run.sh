@@ -7,7 +7,7 @@ DIR=`dirname $0`
 NAME=`echo $DIR | awk -F/ '{print $NF}'`
 
 if [ "x$NERDS_NMAP_OPTIONS" = "x" ]; then
-    NERDS_NMAP_OPTIONS="-PE -sV --version-light -O --osscan-limit"
+    NERDS_NMAP_OPTIONS="-PE -sV -O --osscan-limit"
 fi
 
 usage() {
