@@ -17,7 +17,11 @@ my @nrpe_checks = ('check_disk',
 		   'check_load',
 		   'check_swap',
 		   'check_sensor',
-		   'check_ntp_time'
+		   'check_ntp_time',
+		   # SU Windows server checks
+		   'Checkservice',
+		   'CPU_Usage',
+		   'Memory_Load'
     );
 
 Getopt::Long::Configure ("bundling");
