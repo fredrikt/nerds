@@ -28,6 +28,7 @@ GetOptions(
     'd'		=> \$debug,		'debug'		=> \$debug,
     'h'		=> \$o_help,		'help'		=> \$o_help,
     'O:s'	=> \$output_dir,	'output-dir:s'	=> \$output_dir,
+    					'myname:s'	=> \$MYNAME,
     );
 
 if ($o_help or ! @ARGV) {
