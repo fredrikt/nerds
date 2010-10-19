@@ -162,6 +162,23 @@ sub process_file
     delete ($t->{'host'}{'os'});
     delete ($t->{'host'}{'status'});
 
+    # don't want msrpc ports in my NERDS data repository
+    foreach my $family (keys %{$$t{'host'}{'services'}}) {
+	foreach my $addr (keys %{$$t{'host'}{'services'}{$family}}) {
+	    foreach my $proto (keys %{$$t{'host'}{'services'}{$family}{$addr}}) {
+		foreach my $port (sort keys %{$$t{'host'}{'services'}{$family}{$addr}{$proto}}) {
+		    next if int ($port) < 1024;
+
+		    my $nmap_proto = $$t{'host'}{'services'}{$family}{$addr}{$proto}{$port}{'proto'};
+		    if ($nmap_proto eq 'msrpc') {
+			delete ($t->{'host'}{'services'}{$family}{$addr}{$proto}{$port});
+		    }
+		}
+	    }
+	}
+    }
+
+
     $$href{$hostname} = $t;
 }
 
