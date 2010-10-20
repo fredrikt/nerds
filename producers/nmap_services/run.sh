@@ -14,6 +14,7 @@ usage() {
    echo "Usage: $0 [options] nmap-target ..."
    echo "  [-O <output dir>]"
    echo "  [--nmap cmd <nmap command>]"
+   echo "  [--myname name <default: nmap_services>]"
    echo "  [--help  <show this info>]"
    exit 1
 }
@@ -25,6 +26,7 @@ while test $# != 0; do
     case $1 in
 	-O) REPO="$2" ; shift ;;
 	--nmap) NMAP="$2" ; shift ;;
+	--myname) NAME="$2" ; shift ;;
 	--help|-h) usage ;;
 	--*) usage ;;
 	*)
@@ -58,4 +60,4 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-$DIR/transform-nmap-scanresult.pl -O "$JSONDIR" $TMPFILE
+$DIR/transform-nmap-scanresult.pl -O "$JSONDIR" --myname "$NAME" $TMPFILE
