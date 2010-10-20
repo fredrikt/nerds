@@ -174,11 +174,23 @@ def get_remote_conf(host, username, password):
 	Returns False if the configuration could not be retrived.
 	'''
 	import pexpect
+	ssh_newkey = 'Are you sure you want to continue connecting'
+	login_choices = [ssh_newkey, 'Password:', 'password:', pexpect.EOF]
 
 	try:
 		s = pexpect.spawn('ssh %s@%s' % (username,host))
-		s.expect('password')
-		s.sendline(password)
+		print 'Trying to connect to %s@%s...' % (username, host)
+		i = s.expect(login_choices)
+		if i == 0:
+			print "Storing SSH key."
+			s.sendline('yes')
+			i = s.expect(login_choices)
+		if i == 1 or i == 2:
+			s.sendline(password)
+			print 'Connected to %s.' % host
+		elif i == 3:
+			print "I either got key problems or connection timeout."
+			return False
 		s.expect('>')
 		# Send JunOS command for displaying the configuration in XML
 		# format.
@@ -206,7 +218,7 @@ def main():
 
 	# User friendly usage output
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-C', nargs='1', help='Path to the \
+	parser.add_argument('-C', nargs='?', help='Path to the \
 configuration file.')
 	parser.add_argument('-O', nargs='?', help='Path to output directory.')
 	parser.add_argument('-N', action='store_true',
@@ -214,20 +226,25 @@ configuration file.')
 	args = parser.parse_args()
 
 	# Load the configuration file
-	config = init_config(args.C)
+	if args.C == None:
+		print 'Please provide a configuration file with -C.'
+		sys.exit(1)
+	else:
+		config = init_config(args.C)
 
 	# List to collect configuration in XML format for parsing
 	xmldocs = []
 
-	# Local files
+	# Process local files
 	local_list = config.get('sources', 'local').split()
-	for host in remote_list:
+	for host in local_list:
 		pass # TODO
 
-	# Remote hosts
+	# Process remote hosts
 	remote_list = config.get('sources', 'remote').split()
 	for host in remote_list:
-		xmldoc = get_remote_conf(host)
+		xmldoc = get_remote_conf(host, config.get('ssh', 'user'),
+			config.get('ssh', 'password'))
 		if xmldoc:
 			xmldocs.append(xmldoc)
 
@@ -235,11 +252,12 @@ configuration file.')
 	for doc in xmldocs:
 		routerlist.append(parse(xmldoc))
 
+	out = {}
 	for router in routerlist:
 		template = {'host':{'name': router.name, 'version': 1,
 			'juniper_conf': {}}}
 		template['host']['juniper_conf'] = router.to_json()
-		out[router.name] = json.dumps(template, indent=4}
+		out[router.name] = json.dumps(template, indent=4)
 
 	# Output directory should be ./json/ if nothing else is specified
 	out_dir = './json/'
