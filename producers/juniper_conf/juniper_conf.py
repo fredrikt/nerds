@@ -19,6 +19,7 @@
 # along with NERDS. If not, see <http://www.gnu.org/licenses/>.
 
 from xml.dom import minidom
+import os
 import sys
 import json
 import ConfigParser
@@ -70,9 +71,9 @@ def get_firstchild(element, arg):
 
 def parse(xmldoc):
 	'''
-	Takes a JUNOS conf in XML format and returns a list of class
-	Interface objects
+	Takes a JUNOS conf in XML format and returns a Router object.
 	'''
+
 	re = xmldoc.getElementsByTagName('host-name')
 	hostname = ''
 	interface = ''
@@ -166,7 +167,21 @@ def init_config(path):
 	except IOError as (errno, strerror):
 		print "I/O error({0}): {1}".format(errno, strerror)
 
-def get_remote_conf(host, username, password):
+def get_local_xml(f):
+	'''
+	Parses the provided file to an XML document and returns it.
+
+	Returns False if the XML is malformed.
+	'''
+	try:
+		xmldoc = minidom.parse(f)
+	except ExpatError:
+		print 'Malformed XML input from %s.' % host
+		return False
+
+	return xmldoc
+
+def get_remote_xml(host, username, password):
 	'''
 	Tries to ssh to the supplied JunOS machine and execute the command
 	to show current configuration i XML format.
@@ -232,36 +247,43 @@ configuration file.')
 	else:
 		config = init_config(args.C)
 
-	# List to collect configuration in XML format for parsing
+	# List to collect configuration in XML document format for parsing
 	xmldocs = []
 
 	# Process local files
-	local_list = config.get('sources', 'local').split()
-	for host in local_list:
-		pass # TODO
+	local_sources = config.get('sources', 'local').split()
+	for f in local_sources:
+		xmldoc = get_local_xml(f)
+		if xmldoc:
+			xmldocs.append(xmldoc)
 
 	# Process remote hosts
-	remote_list = config.get('sources', 'remote').split()
-	for host in remote_list:
-		xmldoc = get_remote_conf(host, config.get('ssh', 'user'),
+	remote_sources = config.get('sources', 'remote').split()
+	for host in remote_sources:
+		xmldoc = get_remote_xml(host, config.get('ssh', 'user'),
 			config.get('ssh', 'password'))
 		if xmldoc:
 			xmldocs.append(xmldoc)
 
-	routerlist = []
+	# Parse the xml documents to create Router objects
+	parsed_conf_xml = []
 	for doc in xmldocs:
-		routerlist.append(parse(xmldoc))
+		parsed_conf_xml.append(parse(doc))
 
+	# Call .tojson() for all Router objects and merga that with the
+	# nerds template. Store the json in the dictionary out.
 	out = {}
-	for router in routerlist:
-		template = {'host':{'name': router.name, 'version': 1,
+	for c in parsed_conf_xml:
+		template = {'host':{'name': c.name, 'version': 1,
 			'juniper_conf': {}}}
-		template['host']['juniper_conf'] = router.to_json()
-		out[router.name] = json.dumps(template, indent=4)
+		template['host']['juniper_conf'] = c.to_json()
+		out[c.name] = json.dumps(template, indent=4)
 
 	# Output directory should be ./json/ if nothing else is specified
 	out_dir = './json/'
 
+	# Depending on which arguments the user provided print to file or
+	# to stdout.
 	if args.N is True:
 		for key in out:
 			print out[key]
