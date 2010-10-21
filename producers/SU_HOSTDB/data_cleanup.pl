@@ -169,8 +169,9 @@ sub process_file
 		foreach my $port (sort keys %{$$t{'host'}{'services'}{$family}{$addr}{$proto}}) {
 		    next if int ($port) < 1024;
 
+		    my $nmap_name = $$t{'host'}{'services'}{$family}{$addr}{$proto}{$port}{'name'};
 		    my $nmap_proto = $$t{'host'}{'services'}{$family}{$addr}{$proto}{$port}{'proto'};
-		    if ($nmap_proto eq 'msrpc') {
+		    if ($nmap_name eq 'msrpc' and $nmap_proto eq 'unknown') {
 			delete ($t->{'host'}{'services'}{$family}{$addr}{$proto}{$port});
 		    }
 		}
