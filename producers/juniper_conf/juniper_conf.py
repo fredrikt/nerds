@@ -188,7 +188,12 @@ def get_remote_xml(host, username, password):
 
 	Returns False if the configuration could not be retrived.
 	'''
-	import pexpect
+	try:
+		import pexpect
+	except ImportError:
+		print 'Install module pexpect to be able to use remote sources.'
+		return False
+
 	ssh_newkey = 'Are you sure you want to continue connecting'
 	login_choices = [ssh_newkey, 'Password:', 'password:', pexpect.EOF]
 
