@@ -211,15 +211,16 @@ def get_remote_xml(host, username, password):
 		elif i == 3:
 			print "I either got key problems or connection timeout."
 			return False
-		s.expect('>')
+		s.expect('>', timeout=60)
 		# Send JunOS command for displaying the configuration in XML
 		# format.
 		s.sendline ('show configuration | display xml | no-more')
-		s.expect('</rpc-reply>') # expect end of the XML blob
-		xml = s.before # print everything before last expect()
+		s.expect('</rpc-reply>', timeout=120) 	# expect end of the XML
+												# blob
+		xml = s.before # take everything printed before last expect()
 		s.sendline('exit')
 	except pexpect.ExceptionPexpect:
-		print 'Could not log in to %s.' % host
+		print 'Timed out in %s.' % host
 		return False
 
 	xml += '</rpc-reply>' # Add the end element as pexpect steals it
