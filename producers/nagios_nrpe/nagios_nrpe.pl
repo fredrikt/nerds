@@ -18,6 +18,7 @@ my @nrpe_checks = ('check_disk',
 		   'check_swap',
 		   'check_sensor',
 		   'check_ntp_time',
+		   'check_sua_ubuntu',
 		   # SU Windows server checks
 		   'Checkservice',
 		   'CPU_Usage',
@@ -165,7 +166,7 @@ sub probe_nrpe
 
 	    $$href{$hostname}{'host'}{'nagios_nrpe'}{$check}{'working'} = JSON::true;
 	} elsif ($out =~ /^NRPE: Command .* not defined/o) {
-	    warn ("         - NO\n");
+	    warn ("         - NO\n") if ($debug);
 	} else {
 	    warn ("Unknown output of check_nrpe on $hostname : $out\n");
 	}
