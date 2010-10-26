@@ -69,43 +69,59 @@ def get_firstchild(element, arg):
 	data = element.getElementsByTagName(arg).item(0).firstChild.data
 	return data
 
-def parse(xmldoc):
+def get_hostname(xmldoc):
 	'''
-	Takes a JUNOS conf in XML format and returns a Router object.
+	Finds and returns the hostname from a JunOS config.
 	'''
-
 	re = xmldoc.getElementsByTagName('host-name')
-	hostname = ''
-	interface = ''
-	interfaces = xmldoc.getElementsByTagName('interfaces')
-	router = Router()
-	listofinterfaces = []
-
 	try:
 		hostname = re[0].firstChild.data
 	except AttributeError:
-		print 'No hostname in config file, check the conf and cry!!'
+		print 'No host-name element in config file, check the config.'
 		sys.exit(1)
 
 	if 're0' in hostname or 're1' in hostname:
 		hostname = hostname.replace('-re0','').replace('-re1','')
-	router.name = hostname
 
-	for item in interfaces:
-		try:
-			interface = (xmldoc.getElementsByTagName('interface'))
-		except AttributeError:
-			pass
+	return hostname
 
-	for elements in interface:
+def get_interfaces(xmldoc):
+	'''
+	Returns a list of Interface objects made out from all "interesting"
+	interfaces in the JunOS config.
+
+	Maybe this should be all interfaces and let a consumer care about
+	interesting.
+
+	Dive in to Python writes:
+	"When you parse an XML document, you get a bunch of Python objects
+	that represent all the pieces of the XML document, and some of these
+	Python objects represent attributes of the XML elements. But the
+	(Python) objects that represent the (XML) attributes also have
+	(Python) attributes, which are used to access various parts of the
+	(XML) attribute that the object represents." ARGH ;)
+	'''
+
+	interfaces = xmldoc.getElementsByTagName('interfaces')
+	listofinterfaces = []
+
+	# What did this do?
+	#for item in interfaces:
+		#try:
+			#interface = list(xmldoc.getElementsByTagName('interface'))
+		#except AttributeError:
+			#pass
+	#for elements in interface:
+
+	for elements in interfaces:
 		tempInterface = Interface()
 		try:
 			temp = get_firstchild(elements, 'name')
 		except AttributeError:
 			pass
-		if '.' not in temp and 'lo' not in temp and 'all' not in temp and '*' not in temp:
+		if '.' not in temp and 'lo' not in temp and 'all' not in temp and '*' not in temp: # All interfaces with names containing lo or all removed...what about alltele :)
 			try:
-				tempInterface.name = get_firstchild(elements, 'name')
+				tempInterface.name = get_firstchild(elements, 'name') # name = temp?
 			except AttributeError:
 				pass
 			try:
@@ -153,7 +169,17 @@ def parse(xmldoc):
 
 				tempInterface.unitdict.append({'unit': unittemp, 'name': desctemp, 'vlanid': vlanidtemp, 'address': nametemp})
 			listofinterfaces.append(tempInterface)
-	router.interfaces = listofinterfaces
+
+	return listofinterfaces
+
+def parse_router(xmldoc):
+	'''
+	Takes a JunOS conf in XML format and returns a Router object.
+	'''
+	router = Router()
+	router.name = get_hostname(xmldoc)
+	router.interfaces = get_interfaces(xmldoc)
+
 	return router
 
 def init_config(path):
@@ -239,9 +265,10 @@ def main():
 
 	# User friendly usage output
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-C', nargs='?', help='Path to the \
-configuration file.')
-	parser.add_argument('-O', nargs='?', help='Path to output directory.')
+	parser.add_argument('-C', nargs='?',
+		help='Path to the configuration file.')
+	parser.add_argument('-O', nargs='?',
+		help='Path to output directory.')
 	parser.add_argument('-N', action='store_true',
 		help='Don\'t write output to disk.')
 	args = parser.parse_args()
@@ -274,10 +301,11 @@ configuration file.')
 	# Parse the xml documents to create Router objects
 	parsed_conf_xml = []
 	for doc in xmldocs:
-		parsed_conf_xml.append(parse(doc))
+		parsed_conf_xml.append(parse_router(doc))
 
-	# Call .tojson() for all Router objects and merga that with the
-	# nerds template. Store the json in the dictionary out.
+	# Call .tojson() for all Router objects and merge that with the
+	# nerds template. Store the json in the dictionary out with the key
+	# name.
 	out = {}
 	for c in parsed_conf_xml:
 		template = {'host':{'name': c.name, 'version': 1,
