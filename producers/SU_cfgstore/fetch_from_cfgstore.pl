@@ -41,39 +41,28 @@ push (@input_dirs, $output_dir) unless (@input_dirs);
 
 die ("$0: Invalid output dir '$output_dir'\n") unless ($output_dir and -d $output_dir);
 
-my %hostdata;
+my @files;
 
 foreach my $input_dir (@input_dirs) {
     die ("$0: Invalid input dir '$input_dir'\n") unless (-d $input_dir);
 
-    my @producers = get_producers ($input_dir);
-
-    if (! @producers) {
+    @files = get_producers_files ($input_dir);
+    if (! @files) {
 	# no producers under $input_dir, see if it points directly at some NERDS data files
 
-	my @files = get_nerds_data_files ($input_dir);
+	@files = get_nerds_data_files ($input_dir);
 
 	if (@files) {
 	    warn ("Loading files in directory '$input_dir'...\n") if ($debug);
-
-	    foreach my $file (@files) {
-		warn ("  file '$file'\n") if ($debug);
-		process_file ("$input_dir/$file", \%hostdata, $debug, $cfgstore_dir);
-	    }
 	}
     }
+}
 
-    foreach my $producer (sort @producers) {
-	warn ("Loading producer '$producer'...\n") if ($debug);
+my %hostdata;
 
-	my $pd = get_nerds_data_dir ($input_dir, $producer);
-	my @files = get_nerds_data_files ($pd);
-
-	foreach my $file (@files) {
-	    warn ("  file '$file'\n") if ($debug);
-	    process_file ("$pd/$file", \%hostdata, $debug, $cfgstore_dir);
-	}
-    }
+foreach my $file (@files) {
+    warn ("  file '$file'\n") if ($debug);
+    process_file ($file, \%hostdata, $debug, $cfgstore_dir);
 }
 
 # output a JSON document for every host in %hostdata
@@ -93,6 +82,29 @@ foreach my $host (sort keys %hostdata) {
 
 exit (0);
 
+
+# Recurse into $input_dir, collecting all NERDS data files for each
+# producer found therein.
+sub get_producers_files
+{
+    my $input_dir = shift;
+
+    my @producers = get_producers ($input_dir);
+
+    my @res;
+
+    foreach my $producer (sort @producers) {
+	warn ("Loading producer '$producer'...\n") if ($debug);
+
+	my $pd = get_nerds_data_dir ($input_dir, $producer);
+
+	foreach my $file (get_nerds_data_files ($pd)) {
+	    push (@res, "$pd/$file");
+	}
+    }
+
+    return @res;
+}
 
 # Get a list of all producers under $input_dir/producers/
 sub get_producers
@@ -116,8 +128,6 @@ sub get_producers
     return @producers;
 }
 
-# Get a list of all potential NERDS data files in a directory. Does not
-# actually parse them to verify they are NERDS data files.
 sub get_nerds_data_files
 {
     my $dir = shift;
@@ -219,19 +229,6 @@ sub process_file
     } else {
 	warn ("Found no cfgstore data for host '$hostname' in '$cfgstore_dir'\n") if ($debug);
     }
-}
-
-# `sort | uniq` of a list reference
-sub make_uniq
-{
-    my $lref = shift;
-
-    my %hash;
-    foreach my $t (@{$lref}) {
-	$hash{$t} = 1;
-    }
-
-    @{$lref} = sort keys (%hash);
 }
 
 sub get_most_recent_hostinfo_file {
