@@ -13,12 +13,14 @@ my $debug = 0;
 my $o_help = 0;
 my @input_dirs;
 my $output_dir;
+my $merge_behavior = 'RIGHT_PRECEDENT';
 
 Getopt::Long::Configure ("bundling");
 GetOptions(
     'd'		=> \$debug,		'debug'		=> \$debug,
     'h'		=> \$o_help,		'help'		=> \$o_help,
-    'O:s'	=> \$output_dir,	'output-dir:s'	=> \$output_dir
+    'O:s'	=> \$output_dir,	'output-dir:s'	=> \$output_dir,
+    					'behavior:s'	=> \$merge_behavior
     );
 
 if ($o_help or ! $output_dir) {
@@ -37,6 +39,8 @@ EOT
 push (@input_dirs, $output_dir) unless (@input_dirs);
 
 die ("$0: Invalid output dir '$output_dir'\n") unless (-d $output_dir);
+
+Hash::Merge::set_behavior ($merge_behavior) or die ("$0: Bad merge behavior '$merge_behavior'\n");
 
 my %hostdata;
 
