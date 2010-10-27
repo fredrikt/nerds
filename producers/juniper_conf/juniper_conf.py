@@ -105,70 +105,65 @@ def get_interfaces(xmldoc):
 	interfaces = xmldoc.getElementsByTagName('interfaces')
 	listofinterfaces = []
 
-	# What did this do?
-	#for item in interfaces:
-		#try:
-			#interface = list(xmldoc.getElementsByTagName('interface'))
-		#except AttributeError:
-			#pass
-	#for elements in interface:
-
-	for elements in interfaces:
-		tempInterface = Interface()
+	for item in interfaces:
 		try:
-			temp = get_firstchild(elements, 'name')
+			interface = list(xmldoc.getElementsByTagName('interface'))
 		except AttributeError:
 			pass
-		if '.' not in temp and 'lo' not in temp and 'all' not in temp and '*' not in temp: # All interfaces with names containing lo or all removed...what about alltele :)
-			try:
-				tempInterface.name = get_firstchild(elements, 'name') # name = temp?
-			except AttributeError:
-				pass
-			try:
-				vlantag = elements.getElementsByTagName('vlan-tagging').item(0)
-				if vlantag != None:
-					tempInterface.vlantagging = True
-				else:
-					tempInterface.vlantagging = False
-			except AttributeError:
-				pass
-			try:
-				tempInterface.bundle = get_firstchild(elements, 'bundle')
-			except AttributeError:
-				pass
-			try:
-				tempInterface.desc = get_firstchild(elements, 'description')
-			except AttributeError:
-				tempInterface.desc = 'No description set, fix me!'
-			try:
-				tempInterface.tunneldict.append({'source' :get_firstchild(elements, 'source'), 'destination': get_firstchild(elements, 'destination') })
-			except AttributeError:
-				pass
-			# If is a interface is a AE interface, it should never have
-			# units. If it has it is inactive conf in the router
-			# if tempInterface.bundle == '':
-			units = elements.getElementsByTagName('unit')
-			unitemp = ''
-			desctemp = ''
-			vlanidtemp = ''
-			nametemp = ''
-			for unit in units:
-				unittemp = get_firstchild(unit, 'name')
-				try:
-					desctemp = get_firstchild(unit, 'description')
-				except AttributeError:
-					pass
-				try:
-					vlanidtemp = get_firstchild(unit, 'vlan-id')
-				except AttributeError:
-					pass
-				addresses = unit.getElementsByTagName('address')
-				nametemp = []
-				for address in addresses:
-					nametemp.append(get_firstchild(address, 'name'))
 
-				tempInterface.unitdict.append({'unit': unittemp, 'name': desctemp, 'vlanid': vlanidtemp, 'address': nametemp})
-			listofinterfaces.append(tempInterface)
+	for elements in interface:
+		tempInterface = Interface()
+		try:
+			tempInterface.name = get_firstchild(elements, 'name')
+		except AttributeError:
+			pass
+		try:
+			vlantag = elements.getElementsByTagName(
+				'vlan-tagging').item(0)
+			if vlantag != None:
+				tempInterface.vlantagging = True
+			else:
+				tempInterface.vlantagging = False
+		except AttributeError:
+			pass
+		try:
+			tempInterface.bundle = get_firstchild(elements, 'bundle')
+		except AttributeError:
+			pass
+		try:
+			tempInterface.desc = get_firstchild(elements, 'description')
+		except AttributeError:
+			tempInterface.desc = 'No description set, fix me!'
+		try:
+			source = get_firstchild(elements, 'source')
+			destination = get_firstchild(elements, 'destination')
+			tempInterface.tunneldict.append({'source' : source,
+				'destination': destination})
+		except AttributeError:
+			pass
+
+		units = elements.getElementsByTagName('unit')
+		unitemp = ''
+		desctemp = ''
+		vlanidtemp = ''
+		nametemp = ''
+		for unit in units:
+			unittemp = get_firstchild(unit, 'name')
+			try:
+				desctemp = get_firstchild(unit, 'description')
+			except AttributeError:
+				pass
+			try:
+				vlanidtemp = get_firstchild(unit, 'vlan-id')
+			except AttributeError:
+				pass
+			addresses = unit.getElementsByTagName('address')
+			nametemp = []
+			for address in addresses:
+				nametemp.append(get_firstchild(address, 'name'))
+
+			tempInterface.unitdict.append({'unit': unittemp, 'name': desctemp, 'vlanid': vlanidtemp, 'address': nametemp})
+		listofinterfaces.append(tempInterface)
 
 	return listofinterfaces
 
