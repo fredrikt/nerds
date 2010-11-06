@@ -175,10 +175,10 @@ sub probe_nrpe
 	    $out =~ /CHECK_NRPE: Socket timeout /o or
 	    $out =~ /Connection refused or timed out/o
 	    ) {
-	    warn ("Giving up on host '$hostname'\n") if ($debug);
+	    warn ("Giving up on host '$hostname'\n");
 	    return 0;
 	} else {
-	    warn ("Unknown output of check_nrpe on $hostname : $out\n");
+	    warn ("Unknown output of $check probe on $hostname : $out\n");
 	}
     }
 
