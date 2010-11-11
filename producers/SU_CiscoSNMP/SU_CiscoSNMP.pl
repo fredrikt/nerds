@@ -42,60 +42,6 @@ $checks{'Wlan_if'} = ['WlanIfStatus'];
 $checks{'Port_err'} = ['Interface_error_count'];
 
 
-# map some sysObjectID's to their names.
-#
-my %oid2name = (
-		'.1.3.6.1.4.1.9.1.14',	=> 'cisco4500',
-		'.1.3.6.1.4.1.9.1.50',	=> 'cisco4700',
-		'.1.3.6.1.4.1.9.1.110',	=> 'wsc5000sysID',
-		'.1.3.6.1.4.1.9.1.113',	=> 'cisco1602',
-		'.1.3.6.1.4.1.9.1.115',	=> 'cisco1603',
-		'.1.3.6.1.4.1.9.1.122',	=> 'cisco3620',
-		'.1.3.6.1.4.1.9.1.208',	=> 'cisco2620',
-		'.1.3.6.1.4.1.9.1.209',	=> 'cisco2621',
-		'.1.3.6.1.4.1.9.1.217',	=> 'catalyst2924XLv',
-		'.1.3.6.1.4.1.9.1.218',	=> 'catalyst2924CXLv',
-		'.1.3.6.1.4.1.9.1.246',	=> 'catalyst3508GXL',
-		'.1.3.6.1.4.1.9.1.247',	=> 'catalyst3512XL',
-		'.1.3.6.1.4.1.9.1.248',	=> 'catalyst3524XL',
-		'.1.3.6.1.4.1.9.1.258',	=> 'catalyst6kMsfc',
-		'.1.3.6.1.4.1.9.1.278',	=> 'cat3548XL',
-		'.1.3.6.1.4.1.9.1.283',	=> 'cat6509',
-		'.1.3.6.1.4.1.9.1.287',	=> 'cat3524tXLEn',
-		'.1.3.6.1.4.1.9.1.324',	=> 'catalyst295024',
-		'.1.3.6.1.4.1.9.1.397',	=> 'cisco10720',
-		'.1.3.6.1.4.1.9.1.428',	=> 'catalyst295024G',
-		'.1.3.6.1.4.1.9.1.429',	=> 'catalyst295048G',
-		'.1.3.6.1.4.1.9.1.485',	=> 'catalyst355024PWR',
-		'.1.3.6.1.4.1.9.1.502',	=> 'cat4506',
-		'.1.3.6.1.4.1.9.1.503',	=> 'cat4503',
-		'.1.3.6.1.4.1.9.1.516',	=> 'catalyst37xxStack',
-		'.1.3.6.1.4.1.9.1.525',	=> 'ciscoAIRAP1210',
-		'.1.3.6.1.4.1.9.1.559',	=> 'catalyst295048T',
-		'.1.3.6.1.4.1.9.1.563', => '356024PS',
-		'.1.3.6.1.4.1.9.1.577', => 'cisco2821',
-		'.1.3.6.1.4.1.9.1.617',	=> '3560G-48TS',
-		'.1.3.6.1.4.1.9.1.618',	=> 'ciscoAIRAP1130',
-		'.1.3.6.1.4.1.9.1.620',	=> 'cisco1841',
-		'.1.3.6.1.4.1.9.1.633',	=> 'catalyst356024TS',
-		'.1.3.6.1.4.1.9.1.696',	=> 'catalyst2960G24',
-		'.1.3.6.1.4.1.9.1.697',	=> 'catalyst2960G48',
-		'.1.3.6.1.4.1.9.1.716',	=> 'catalyst296024TT',
-		'.1.3.6.1.4.1.9.1.717',	=> 'catalyst296048TT',
-		'.1.3.6.1.4.1.9.1.798',	=> 'catalyst29608TC',
-		'.1.3.6.1.4.1.9.1.799',	=> 'catalyst2960G8TC',
-		'.1.3.6.1.4.1.9.1.1208',=> 'catalyst2960S',
-		'.1.3.6.1.4.1.9.5.7',	=> 'wsc5000sysID',
-		'.1.3.6.1.4.1.9.5.12',	=> 'wsc5000sysID',
-		'.1.3.6.1.4.1.9.5.17',	=> 'wsc5500sysID',
-		'.1.3.6.1.4.1.9.5.41',	=> 'wsc4912gsysID',
-		'.1.3.6.1.4.1.9.5.44',	=> 'wsc6509sysID',
-		'.1.3.6.1.4.1.9.5.46',	=> 'wsc4006sysID',
-		'.1.3.6.1.4.1.9.5.59',	=> 'wsc4506sysID',
-	       );
-
-# and the other way around...
-#
 my %name2oid = (
 		sysDescr		=> '.1.3.6.1.2.1.1.1.0',
 		sysObjectID		=> '.1.3.6.1.2.1.1.2.0',
@@ -119,7 +65,6 @@ my %name2oid = (
 		EnvPsuState		=> '.1.3.6.1.4.1.9.9.13.1.5.1.3',
 		WlanIfStatus            => '.1.3.6.1.4.1.9.9.276.1.1.2.1.3.1',
                 Interface_error_count	=> '1.3.6.1.2.1.2.2.1.14.1',
-
 	       );
 
 
@@ -193,7 +138,7 @@ foreach my $input_dir (@input_dirs) {
 foreach my $file (@files) {
     warn ("  file '$file'\n") if ($debug);
     process_file ("$file", \%hostdata, \@device_networks, $debug, $community,
-		  \@host_info, \%checks, \%oid2name, \%name2oid) ;
+		  \@host_info, \%checks, \%name2oid) ;
 }
 
 # break up the union of all scan files into an XML blob per host
@@ -299,7 +244,6 @@ sub process_file
     my $community = shift;
     my $host_info_ref = shift;
     my $checks_ref = shift;
-    my $oid2name_ref = shift;
     my $name2oid_ref = shift;
 
     open (IN, "< $file") or die ("$0: Could not open '$file' for reading : $!\n");
@@ -358,7 +302,7 @@ sub process_file
     }
 
     snmp_scan_device ($hostname, $href, $debug, $community,
-		      $host_info_ref, $checks_ref, $oid2name_ref, $name2oid_ref
+		      $host_info_ref, $checks_ref, $name2oid_ref
 	) if ($do_scan);
 }
 
@@ -370,7 +314,6 @@ sub snmp_scan_device
     my $community = shift;
     my $host_info_ref = shift;
     my $checks_ref = shift;
-    my $oid2name_ref = shift;
     my $name2oid_ref = shift;
 
     warn ("SNMP scanning $agent\n") if ($debug);
@@ -395,7 +338,7 @@ sub snmp_scan_device
 
     my %res;
 
-    my $agent_alive = check_is_agent_alive ($agent, $snmp_session,  \%res, $oid2name_ref, $name2oid_ref, $host_info_ref, $logfun);
+    my $agent_alive = check_is_agent_alive ($agent, $snmp_session,  \%res, $name2oid_ref, $host_info_ref, $logfun);
 
     if ($agent_alive) {
 	# mandatory basic NERDS data for a host
@@ -434,7 +377,6 @@ sub check_is_agent_alive
     my $agent = shift;
     my $session = shift;
     my $hosts_ref = shift;
-    my $oid2name_ref = shift;
     my $name2oid_ref = shift;
     my $host_info_ref = shift;
     my $logfun = shift;
@@ -461,15 +403,8 @@ sub check_is_agent_alive
 
 	next unless ($rtn);
 
-	if ($oidname eq 'sysObjectID') {
-	    my $desc = $$oid2name_ref{$rtn} if (defined ($rtn) and $$oid2name_ref{$rtn});
-	    $desc = "(unknown device type : $rtn)" unless ($desc);
-
-	    $$hosts_ref{'host'}{$MYNAME}{'info'}{$oidname} = $rtn;
-	} else {
-	    $rtn =~ s/\"//g;
-	    $$hosts_ref{'host'}{$MYNAME}{'info'}{$oidname} = $rtn;
-	}
+	$rtn =~ s/\"//g;
+	$$hosts_ref{'host'}{$MYNAME}{'info'}{$oidname} = $rtn;
     }
 
     return $res;
