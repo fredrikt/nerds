@@ -74,13 +74,15 @@ my $o_help = 0;
 my @input_dirs;
 my $output_dir;
 my $devicenets_fn;
+my $switchlist_fn;
 
 Getopt::Long::Configure ("bundling");
 GetOptions(
     'd'		=> \$debug,		'debug'			=> \$debug,
     'h'		=> \$o_help,		'help'			=> \$o_help,
     'O:s'	=> \$output_dir,	'output-dir:s'		=> \$output_dir,
-    'F:s'	=> \$devicenets_fn,	'networks-file:s'	=> \$devicenets_fn
+    'F:s'	=> \$devicenets_fn,	'networks-file:s'	=> \$devicenets_fn,
+    'S:s'	=> \$switchlist_fn,	'switches-file:s'	=> \$switchlist_fn,
     );
 
 if ($o_help or ! $output_dir) {
@@ -92,6 +94,7 @@ Syntax : $0 -O dir [options] [input-dir ...]
 
         -O|--output-dir dir	<output directory>
 	-F|--networks-file file <file containing network devices subnets (e.g. 192.0.2.0/24)>
+	-S|--switches-file file <file with switch names - if colon-separated (rancid), first field is used>
 
 EOT
 }
@@ -112,6 +115,22 @@ if ($devicenets_fn) {
 	next if ($t =~ /^\s*$/o);	# blank lines
 
 	push (@device_networks, $t);
+    }
+    close (IN);
+}
+
+my %switches;
+if ($switchlist_fn) {
+    open (IN, "< $switchlist_fn") or die ("$0: Could not open switch-list-file '$switchlist_fn' for reading : $!\n");
+    while (my $t = <IN>) {
+	chomp ($t);
+	next if ($t =~ /^\s*#/o);		# comments
+	next if ($t =~ /^\s*$/o);		# blank lines
+	$t = $1 if ($t =~ /^(.+?):.+$/o);	# colon separated
+
+	$t = lc ($t);
+
+	$switches{$t} = 1;
     }
     close (IN);
 }
@@ -137,7 +156,7 @@ foreach my $input_dir (@input_dirs) {
 
 foreach my $file (@files) {
     warn ("  file '$file'\n") if ($debug);
-    process_file ("$file", \%hostdata, \@device_networks, $debug, $community,
+    process_file ("$file", \%hostdata, \@device_networks, \%switches, $debug, $community,
 		  \@host_info, \%checks, \%name2oid) ;
 }
 
@@ -240,6 +259,7 @@ sub process_file
     my $file = shift;
     my $href = shift;
     my $devicenets_ref = shift;
+    my $switches_ref = shift;
     my $debug = shift;
     my $community = shift;
     my $host_info_ref = shift;
@@ -262,25 +282,29 @@ sub process_file
 	die ("$0: Can't interpret NERDS data of version '$nerds_version' in file '$file'\n");
     }
 
-    my $hostname = $$t{'host'}{'name'};
+    my $hostname = lc ($$t{'host'}{'name'});
+
 
     if ($$href{$hostname}) {
 	warn ("Host '$hostname' already scanned.\n") if ($debug);
 	return undef;
     }
 
-    my $do_scan = 0;
+    my $do_scan;
+    $do_scan = 1 if $$switches_ref{$hostname};
 
-    # Check if subnet of this host is one of our network device networks
-    foreach my $subnet_id (keys %{$$t{'host'}{'SU_HOSTDB'}{'subnet'}}) {
-	my $subnet = $$t{'host'}{'SU_HOSTDB'}{'subnet'}{$subnet_id}{'name'};
-	my ($t_subnet) = grep { /^${subnet}$/ } @{$devicenets_ref};
-	if ($t_subnet) {
-	    warn ("$hostname is on a known network device subnet : $t_subnet\n") if ($debug);
-	    $do_scan = 1;
-	    last;
-	} else {
-	    warn ("    Subnet $subnet not found in list : " . join (', ', @{$devicenets_ref}) . "\n") if ($debug);
+    unless ($do_scan) {
+	# Check if subnet of this host is one of our network device networks
+	foreach my $subnet_id (keys %{$$t{'host'}{'SU_HOSTDB'}{'subnet'}}) {
+	    my $subnet = $$t{'host'}{'SU_HOSTDB'}{'subnet'}{$subnet_id}{'name'};
+	    my ($t_subnet) = grep { /^${subnet}$/ } @{$devicenets_ref};
+	    if ($t_subnet) {
+		warn ("$hostname is on a known network device subnet : $t_subnet\n") if ($debug);
+		$do_scan = 1;
+		last;
+	    } else {
+		warn ("    Subnet $subnet not found in list : " . join (', ', @{$devicenets_ref}) . "\n") if ($debug);
+	    }
 	}
     }
 
