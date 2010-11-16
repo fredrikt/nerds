@@ -34,6 +34,7 @@ class Router:
     def __init__(self):
         self.name = ''
         self.interfaces = []
+        self.bgp_peerings = []
 
     def to_json(self):
         j = {'name':self.name}
@@ -41,6 +42,10 @@ class Router:
         for interface in self.interfaces:
             interfaces.append(interface.to_json())
         j['interfaces'] = interfaces
+        bgp_peerings = []
+        for peering in self.bgp_peerings:
+            bgp_peerings.append(peering.to_json())
+        j['bgp_peerings'] = bgp_peerings
         return j
 
 class Interface:
@@ -61,12 +66,31 @@ class Interface:
             'units':self.unitdict}
         return j
 
-def get_firstchild(element, arg):
+class BgpPeering:
+    def __init__(self):
+        self.type = None
+        self.remote_address = None
+        self.description = None
+        self.local_address = None
+        self.group = None
+        self.as_number = None
+
+    def to_json(self):
+        j = {'type':self.type,'remote_address':self.remote_address,
+            'description':self.description, 'local_address':self.local_address,
+            'group':self.group,'as_number':self.as_number}
+        return j
+
+
+def get_firstchild(element, tag):
     '''
-    Helper function, takes xmlelement and a string.
-    Returns a string.
+    Takes xml element and a name of a tag.
+    Returns the data from a tag when looping over a parent.
     '''
-    data = element.getElementsByTagName(arg).item(0).firstChild.data
+    try:
+        data = element.getElementsByTagName(tag).item(0).firstChild.data
+    except AttributeError:
+        data = None
     return data
 
 def get_hostname(xmldoc):
@@ -87,11 +111,8 @@ def get_hostname(xmldoc):
 
 def get_interfaces(xmldoc):
     '''
-    Returns a list of Interface objects made out from all "interesting"
-    interfaces in the JunOS config.
-
-    Maybe this should be all interfaces and let a consumer care about
-    interesting.
+    Returns a list of Interface objects made out from all interfaces in
+    the JunOS config.
 
     Dive in to Python writes:
     "When you parse an XML document, you get a bunch of Python objects
@@ -162,10 +183,44 @@ def get_interfaces(xmldoc):
             for address in addresses:
                 nametemp.append(get_firstchild(address, 'name'))
 
-            tempInterface.unitdict.append({'unit': unittemp, 'name': desctemp, 'vlanid': vlanidtemp, 'address': nametemp})
+            tempInterface.unitdict.append({'unit': unittemp,
+                'name': desctemp, 'vlanid': vlanidtemp,
+                'address': nametemp})
         listofinterfaces.append(tempInterface)
 
     return listofinterfaces
+
+def get_bgp_peerings(xmldoc):
+    '''
+    Returns a list of all BGP peerings in the JunOS configuration.
+    '''
+    bgp = xmldoc.getElementsByTagName('bgp')
+    groups = bgp[0].getElementsByTagName('group')
+    list_of_peerings = []
+
+    for element in groups:
+        group_name = get_firstchild(element, 'name')
+        group_type = get_firstchild(element, 'type')
+        # Seems like only internal BGP peerings have local-address
+        # set. Need to find a good way to get it for external
+        # peerings as well. Erik talked about matching sub nets.
+        local_address = get_firstchild(element, 'local-address')
+
+        neighbors = element.getElementsByTagName('neighbor')
+        for neighbor in neighbors:
+            #if not neighbor.hasAttribute('inactive')
+            peering = BgpPeering()
+            peering.type = group_type
+            peering.remote_address = get_firstchild(neighbor, 'name')
+            peering.description = get_firstchild(neighbor,
+                'description')
+            peering.local_address = local_address
+            peering.group = group_name
+            peering.as_number = get_firstchild(neighbor,'peer-as')
+            list_of_peerings.append(peering)
+
+    return list_of_peerings
+
 
 def parse_router(xmldoc):
     '''
@@ -174,6 +229,7 @@ def parse_router(xmldoc):
     router = Router()
     router.name = get_hostname(xmldoc)
     router.interfaces = get_interfaces(xmldoc)
+    router.bgp_peerings = get_bgp_peerings(xmldoc)
 
     return router
 
