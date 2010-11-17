@@ -98,8 +98,11 @@ def get_hostname(xmldoc):
     Finds and returns the hostname from a JunOS config.
     '''
     re = xmldoc.getElementsByTagName('host-name')
+    domain = xmldoc.getElementsByTagName('domain-name')
+
     try:
-        hostname = re[0].firstChild.data
+        hostname = '%s.%s' % (re[0].firstChild.data,
+                            domain[0].firstChild.data)
     except AttributeError:
         print 'No host-name element in config file, check the config.'
         sys.exit(1)
@@ -126,43 +129,35 @@ def get_interfaces(xmldoc):
     interfaces = xmldoc.getElementsByTagName('interfaces')
     listofinterfaces = []
 
-    for item in interfaces:
-        try:
-            interface = list(xmldoc.getElementsByTagName('interface'))
-        except AttributeError:
-            pass
+    for i in interfaces:
+        interface = list(i.getElementsByTagName('interface'))
 
     for elements in interface:
         tempInterface = Interface()
-        try:
-            tempInterface.name = get_firstchild(elements, 'name')
-        except AttributeError:
-            pass
-        try:
-            vlantag = elements.getElementsByTagName(
-                'vlan-tagging').item(0)
-            if vlantag != None:
-                tempInterface.vlantagging = True
-            else:
-                tempInterface.vlantagging = False
-        except AttributeError:
-            pass
-        try:
-            tempInterface.bundle = get_firstchild(elements, 'bundle')
-        except AttributeError:
-            pass
-        try:
-            tempInterface.desc = get_firstchild(elements, 'description')
-        except AttributeError:
-            tempInterface.desc = 'No description set, fix me!'
-        try:
-            source = get_firstchild(elements, 'source')
-            destination = get_firstchild(elements, 'destination')
-            tempInterface.tunneldict.append({'source' : source,
-                'destination': destination})
-        except AttributeError:
-            pass
 
+        # Interface name, ge-0/1/0 or similar
+        tempInterface.name = get_firstchild(elements, 'name')
+
+        # Is the interface vlan-tagging?
+        vlantag = elements.getElementsByTagName('vlan-tagging').item(0)
+        if vlantag != None:
+            tempInterface.vlantagging = True
+        else:
+            tempInterface.vlantagging = False
+
+        # Is it a bundled interface?
+        tempInterface.bundle = get_firstchild(elements, 'bundle')
+
+        # Get the interface description
+        tempInterface.desc = get_firstchild(elements, 'description')
+
+        # Get tunnel information if any
+        source = get_firstchild(elements, 'source')
+        destination = get_firstchild(elements, 'destination')
+        tempInterface.tunneldict.append({'source' : source,
+            'destination': destination})
+
+        # Get all information per interface unit
         units = elements.getElementsByTagName('unit')
         unitemp = ''
         desctemp = ''
@@ -170,14 +165,8 @@ def get_interfaces(xmldoc):
         nametemp = ''
         for unit in units:
             unittemp = get_firstchild(unit, 'name')
-            try:
-                desctemp = get_firstchild(unit, 'description')
-            except AttributeError:
-                pass
-            try:
-                vlanidtemp = get_firstchild(unit, 'vlan-id')
-            except AttributeError:
-                pass
+            desctemp = get_firstchild(unit, 'description')
+            vlanidtemp = get_firstchild(unit, 'vlan-id')
             addresses = unit.getElementsByTagName('address')
             nametemp = []
             for address in addresses:
@@ -186,6 +175,8 @@ def get_interfaces(xmldoc):
             tempInterface.unitdict.append({'unit': unittemp,
                 'name': desctemp, 'vlanid': vlanidtemp,
                 'address': nametemp})
+
+        # Add interface to the collection of interfaces
         listofinterfaces.append(tempInterface)
 
     return listofinterfaces
