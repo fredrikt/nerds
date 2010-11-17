@@ -74,7 +74,7 @@ my $o_help = 0;
 my @input_dirs;
 my $output_dir;
 my $devicenets_fn;
-my $switchlist_fn;
+my @switchlist_fns;
 
 Getopt::Long::Configure ("bundling");
 GetOptions(
@@ -82,7 +82,7 @@ GetOptions(
     'h'		=> \$o_help,		'help'			=> \$o_help,
     'O:s'	=> \$output_dir,	'output-dir:s'		=> \$output_dir,
     'F:s'	=> \$devicenets_fn,	'networks-file:s'	=> \$devicenets_fn,
-    'S:s'	=> \$switchlist_fn,	'switches-file:s'	=> \$switchlist_fn,
+    'S:s'	=> \@switchlist_fns,	'switches-file:s'	=> \@switchlist_fns,
     );
 
 if ($o_help or ! $output_dir) {
@@ -120,19 +120,21 @@ if ($devicenets_fn) {
 }
 
 my %switches;
-if ($switchlist_fn) {
-    open (IN, "< $switchlist_fn") or die ("$0: Could not open switch-list-file '$switchlist_fn' for reading : $!\n");
-    while (my $t = <IN>) {
-	chomp ($t);
-	next if ($t =~ /^\s*#/o);		# comments
-	next if ($t =~ /^\s*$/o);		# blank lines
-	$t = $1 if ($t =~ /^(.+?):.+$/o);	# colon separated
+if (@switchlist_fns) {
+    foreach my $switchlist_fn (@switchlist_fns) {
+	open (IN, "< $switchlist_fn") or die ("$0: Could not open switch-list-file '$switchlist_fn' for reading : $!\n");
+	while (my $t = <IN>) {
+	    chomp ($t);
+	    next if ($t =~ /^\s*#/o);		# comments
+	    next if ($t =~ /^\s*$/o);		# blank lines
+	    $t = $1 if ($t =~ /^(.+?):.+$/o);	# colon separated
 
-	$t = lc ($t);
+	    $t = lc ($t);
 
-	$switches{$t} = 1;
+	    $switches{$t} = 1;
+	}
+	close (IN);
     }
-    close (IN);
 }
 
 my %hostdata;
@@ -160,7 +162,7 @@ foreach my $file (@files) {
 		  \@host_info, \%checks, \%name2oid) ;
 }
 
-# break up the union of all scan files into an XML blob per host
+# break up the union of all scan files into a JSON file per host
 foreach my $host (sort keys %hostdata) {
     my $thishost = $hostdata{$host};
 
@@ -291,7 +293,10 @@ sub process_file
     }
 
     my $do_scan;
-    $do_scan = 1 if $$switches_ref{$hostname};
+    if ($$switches_ref{$hostname}) {
+	warn ("$hostname is a known network device\n") if ($debug);
+	$do_scan = 1;
+    }
 
     unless ($do_scan) {
 	# Check if subnet of this host is one of our network device networks
