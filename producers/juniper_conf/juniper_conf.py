@@ -52,7 +52,7 @@ class Interface:
     def __init__(self):
         self.name = ''
         self.bundle = ''
-        self.desc = ''
+        self.description = ''
         self.vlantagging = ''
         self.tunneldict = []
         # Unit dict is a list of dictionaries containing units to
@@ -61,7 +61,8 @@ class Interface:
         self.unitdict = []
 
     def to_json(self):
-        j = {'name':self.name, 'bundle':self.bundle, 'desc':self.desc,
+        j = {'name':self.name, 'bundle':self.bundle,
+            'description':self.description,
             'vlantagging':self.vlantagging, 'tunnels':self.tunneldict,
             'units':self.unitdict}
         return j
@@ -173,7 +174,7 @@ def get_interfaces(xmldoc):
                 nametemp.append(get_firstchild(address, 'name'))
 
             tempInterface.unitdict.append({'unit': unittemp,
-                'name': desctemp, 'vlanid': vlanidtemp,
+                'description': desctemp, 'vlanid': vlanidtemp,
                 'address': nametemp})
 
         # Add interface to the collection of interfaces
