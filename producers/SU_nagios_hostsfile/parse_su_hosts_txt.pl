@@ -21,11 +21,9 @@ parse_su_hosts_txt.pl -h
 
 =head1 EXAMPLE
 
-## MAIL-SERVERS
-##
-##
+# MAIL-SERVERS
+
 group mail-servers       mail-admins             e-mail servers
-##
 
 mx1.su.se       check-host-alive        check_smtp, \
                                         check_ssh, \
@@ -51,7 +49,6 @@ av-in4.su.se    check-host-alive        check_nrpe_1arg!check_load, \
     * a Nagios host group with name "e-mail servers"
     * a Nagios contactgroup with name "mail-admins"
     * a Nagios contact with name "mail-admins-contact"
-
 
     2) A host
 
