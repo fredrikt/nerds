@@ -19,6 +19,7 @@ my @nrpe_checks = ('check_disk',
 		   'check_sensor',
 		   'check_ntp_time',
 		   'check_sua_ubuntu',
+		   'check_shib_sp_status',
 		   # SU Windows server checks
 		   'Checkservice',
 		   'CPU_Usage',
