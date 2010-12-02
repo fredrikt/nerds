@@ -63,15 +63,16 @@ foreach my $input_dir (@input_dirs) {
 }
 
 my %hostgroups_data;
+my %servicegroups_data;
 if ($hostgroups_file) {
-    load_hostgroups ($hostgroups_file, \%hostgroups_data);
+    load_groups ($hostgroups_file, \%hostgroups_data, \%servicegroups_data);
 }
 
 my %hostdata;
 
 foreach my $file (sort @files) {
     warn ("  file '$file'\n") if ($debug);
-    process_file ($file, \%hostdata, $debug, \%hostgroups_data);
+    process_file ($file, \%hostdata, $debug, \%hostgroups_data, \%servicegroups_data);
 }
 
 # output a JSON document for every host in %hostdata
@@ -172,6 +173,7 @@ sub process_file
     my $href = shift;
     my $debug = shift;
     my $hostgroups_ref = shift;
+    my $servicegroups_ref = shift;
 
     open (IN, "< $file") or die ("$0: Could not open '$file' for reading : $!\n");
     my $json = join ('', <IN>);
@@ -190,13 +192,14 @@ sub process_file
 	die ("$0: Can't interpret NERDS data of version '$nerds_version' in file '$file'\n");
     }
 
-    add_hostgroups ($hostname, $hostgroups_ref, $href, $debug);
+    add_groups ($hostname, $hostgroups_ref, $servicegroups_ref, $href, $debug);
 }
 
-sub add_hostgroups
+sub add_groups
 {
     my $hostname = shift;
     my $hostgroups_ref = shift;
+    my $servicegroups_ref = shift;
     my $href = shift;
     my $debug = shift;
 
@@ -229,6 +232,32 @@ sub add_hostgroups
 	}
     }
 
+    foreach my $id (sort keys %{$servicegroups_ref}) {
+	my @regexps = @{$$servicegroups_ref{$id}{'host-service-regexps'}};
+	my $group = $$servicegroups_ref{$id}{'group'};
+
+	foreach my $regexp (@regexps) {
+	    next unless defined ($regexp);
+
+	    my $host_regexp = '';
+	    my $service_regexp = '';
+	    if ($regexp =~ /^(.+?)\/(.+)$/o) {
+		$host_regexp = $1;
+		$service_regexp = $2;
+	    } else {
+		$host_regexp = $regexp;
+		$service_regexp = '.*';
+	    }
+
+	    if ($hostname =~ /$host_regexp/) {
+		$g_count++;
+		warn ("Add $hostname to service group $group (RE $service_regexp)\n") if ($debug);
+
+		push (@{$res{'host'}{$MYNAME}{'service_groups'}{$service_regexp}}, $group);
+	    }
+	}
+    }
+
     if ($g_count) {
 	$$href{$hostname} = \%res;
     }
@@ -236,13 +265,14 @@ sub add_hostgroups
     return $g_count;
 }
 
-
-sub load_hostgroups
+sub load_groups
 {
     my $fn = shift;
     my $hostgroups_ref = shift;
+    my $servicegroups_ref = shift;
 
-    my $id = 0;
+    my $hostgroup_id = 0;
+    my $servicegroup_id = 0;
 
     open (IN, "< $fn") or die ("$0: Could not open hostgroup file '$fn' for reading : $!\n");
     while (my $t = <IN>) {
@@ -260,12 +290,30 @@ sub load_hostgroups
 	    } else {
 		die ("$0: Unknown match-type in '$match' (line $. of $fn)\n");
 	    }
-	    $$hostgroups_ref{$id}{'group'} = $group;
-	    $$hostgroups_ref{$id}{'type'} = 'aux';
-	    $$hostgroups_ref{$id}{'desc'} = $desc;
-	    push (@{$$hostgroups_ref{$id}{'host-regexps'}}, $match);
-	    warn ("GROUP $group REGEXPS NOW : " . join (' ', @{$$hostgroups_ref{$id}{'host-regexps'}}) . "\n");
-	    $id++;
+	    $$hostgroups_ref{$hostgroup_id}{'group'} = $group;
+	    $$hostgroups_ref{$hostgroup_id}{'type'} = 'aux';
+	    $$hostgroups_ref{$hostgroup_id}{'desc'} = $desc;
+	    push (@{$$hostgroups_ref{$hostgroup_id}{'host-regexps'}}, $match);
+	    #warn ("GROUP $group REGEXPS NOW : " . join (' ', @{$$hostgroups_ref{$hostgroup_id}{'host-regexps'}}) . "\n");
+	    $hostgroup_id++;
+	} elsif ($t =~ /^servicegroup\s+(\S+)\s+(\S+)\s+(.+)$/o) {
+	    my $groups = $1;
+	    my $desc = $2;
+	    my $match = $3;
+
+	    if ($match =~ /^host-service-regexp:(.+)$/o) {
+		$match = $1;
+	    } else {
+		die ("$0: Unknown match-type in '$match' (line $. of $fn)\n");
+	    }
+
+	    foreach my $group (split (',', $groups)) {
+		$$servicegroups_ref{$servicegroup_id}{'group'} = $group;
+		$$servicegroups_ref{$servicegroup_id}{'desc'} = $desc;
+		push (@{$$servicegroups_ref{$servicegroup_id}{'host-service-regexps'}}, $match);
+		#warn ("GROUP $group REGEXPS NOW : " . join (' ', @{$$servicegroups_ref{$servicegroup_id}{'service-regexps'}}) . "\n");
+		$servicegroup_id++;
+	    }
 	} else {
 	    die ("$0: Bad input on line $. of file $fn\n");
 	}
