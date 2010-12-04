@@ -15,14 +15,14 @@ my $debug = 0;
 my $o_help = 0;
 my @input_dirs;
 my $output_dir;
-my $hostgroups_file;
+my $groups_file;
 
 Getopt::Long::Configure ("bundling");
 GetOptions(
     'd'		=> \$debug,		'debug'			=> \$debug,
     'h'		=> \$o_help,		'help'			=> \$o_help,
     'O:s'	=> \$output_dir,	'output-dir:s'		=> \$output_dir,
-					'hostgroups-file:s'	=> \$hostgroups_file
+					'groups-file:s'		=> \$groups_file
     );
 
 if ($o_help or ! $output_dir) {
@@ -36,7 +36,7 @@ Syntax : $0 -O dir [options] [input-dir ...]
 
     Options :
 
-        --hostgroups-file <file>	File with host group information in it.
+        --groups-file <file>	File with host group information in it.
 EOT
 }
 
@@ -64,8 +64,8 @@ foreach my $input_dir (@input_dirs) {
 
 my %hostgroups_data;
 my %servicegroups_data;
-if ($hostgroups_file) {
-    load_groups ($hostgroups_file, \%hostgroups_data, \%servicegroups_data);
+if ($groups_file) {
+    load_groups ($groups_file, \%hostgroups_data, \%servicegroups_data);
 }
 
 my %hostdata;
