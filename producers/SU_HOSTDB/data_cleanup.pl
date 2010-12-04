@@ -191,7 +191,11 @@ sub make_uniq
 {
     my $lref = shift;
 
-    return unless defined (@{$lref});
+    eval { my $a = @{$lref}; };
+    if ($@) {
+	warn ("$0: make_uniq called with bad input ($@) :\n" . Dumper ($lref) . "\n");
+	return undef;
+    }
 
     my %hash;
     foreach my $t (@{$lref}) {
