@@ -110,7 +110,7 @@ load_canon_hostdata ($hostdb_dir, \%canon_hostdata, $debug) if ($hostdb_dir);
 my %hostdata;
 my $hostdb; # undefined for now
 
-read_suhosts_file ($input_file, \%hostdata, $hostdb, $debug);
+read_suhosts_file ($input_file, \%hostdata, $hostdb, \%canon_hostdata, $debug);
 
 # output a JSON document for every host in %hostdata
 foreach my $host (sort keys %hostdata) {
@@ -135,6 +135,7 @@ sub read_suhosts_file
     my $fn = shift;
     my $href = shift;
     my $hostdb = shift;
+    my $canon_hostdata = shift;
     my $debug = shift;
 
     open (FILE, "< $fn") or die ("$0: Could not open su-hosts file '$fn' for reading : $!\n");
@@ -172,6 +173,8 @@ sub read_suhosts_file
 		warn ("$0: Invalid hostname '$host' on line $. of file '$fn'\n");
 		next;
 	    }
+
+	    $host = get_canonical_hostname ($host, $canon_hostdata);
 
 	    $services_in =~ s/\s*$//go;	# strip
 	    # look for backslash at end of services
@@ -412,13 +415,15 @@ sub get_canonical_hostname
     my $hostname_in = shift;
     my $hosts_ref = shift;
 
+    $hostname_in = lc ($hostname_in);
+
     foreach my $hostname (sort keys %{$hosts_ref}) {
 	my $a = get_hostdb_attr ('aliases', $hostname, $hosts_ref);
 	if ($a) {
 	    foreach my $aid (@{$a}) {
 		my $aliasname = $$hosts_ref{$hostname}{'host'}{'SU_HOSTDB'}{'alias'}{$aid}{'aliasname'};
 
-		return $hostname if ($aliasname eq $hostname_in);
+		return lc ($hostname) if (lc ($aliasname) eq lc $hostname_in);
 	    }
 	}
     }
