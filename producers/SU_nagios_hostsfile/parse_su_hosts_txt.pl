@@ -74,12 +74,14 @@ my $debug = 0;
 my $o_help = 0;
 my @input_dirs;
 my $output_dir;
+my $hostdb_dir;
 
 Getopt::Long::Configure ("bundling");
 GetOptions(
     'd'		=> \$debug,		'debug'		=> \$debug,
     'h'		=> \$o_help,		'help'		=> \$o_help,
-    'O:s'	=> \$output_dir,	'output-dir:s'	=> \$output_dir
+    'O:s'	=> \$output_dir,	'output-dir:s'	=> \$output_dir,
+    'H:s'	=> \$hostdb_dir,	'hostdb-dir:s'	=> \$hostdb_dir,
     );
 
 if ($o_help or ! $output_dir) {
@@ -91,12 +93,19 @@ Syntax : $0 -O dir [options] input-file
 
         -O	output directory
 
+    Options :
+
+        -H <dir> or --hostdb-dir <dir>	Directory with SU_HOSTDB NERDS output, for hostname canonization
+
 EOT
 }
 
 my $input_file = shift @ARGV;
 
 die ("$0: Invalid output dir '$output_dir'\n") unless ($output_dir and -d $output_dir);
+
+my %canon_hostdata;
+load_canon_hostdata ($hostdb_dir, \%canon_hostdata, $debug) if ($hostdb_dir);
 
 my %hostdata;
 my $hostdb; # undefined for now
@@ -332,4 +341,153 @@ sub get_nerds_data_dir
     my $producer = shift;
 
     return "$repo/producers/$producer/json";
+}
+
+sub load_canon_hostdata
+{
+    my $input_dir = shift;
+    my $hosts_ref = shift;
+    my $debug = shift;
+
+    my @files = get_nerds_data_files ($input_dir);
+
+    if (@files) {
+	warn ("Loading host data from directory '$input_dir'...\n") if ($debug);
+    }
+
+    foreach my $file (@files) {
+	warn ("  file '$file'\n") if ($debug);
+
+	open (IN, "< $input_dir/$file") or die ("$0: Could not open '$input_dir/$file' for reading : $!\n");
+	my $json = join ("", <IN>);
+	close (IN);
+
+	my $t;
+
+	$t = JSON->new->utf8->decode ($json);
+
+	#warn ("DECODED : " . Dumper ($t) . "\n") if ($debug);
+
+	my $hostname = $$t{'host'}{'name'};
+	my $nerds_version = $$t{'host'}{'version'};
+
+	if ($nerds_version != 1) {
+	    die ("$0: Can't interpret NERDS data of version '$nerds_version' in file '$file'\n");
+	}
+
+	$$hosts_ref{$hostname} = $t;
+    }
+}
+
+# Get a list of all potential NERDS data files in a directory. Does not
+# actually parse them to verify they are NERDS data files.
+sub get_nerds_data_files
+{
+    my $dir = shift;
+
+    my @files;
+
+    opendir (DIR, $dir) or die ("$0: Could not opendir '$dir' : $!\n");
+    while (my $t = readdir (DIR)) {
+	next unless ($t =~ /.+\.\.json$/oi);
+	next unless (-f "$dir/$t");
+
+	push (@files, $t);
+    }
+
+    closedir (DIR);
+
+    return @files;
+}
+
+=head2 get_canonical_hostname
+
+   my $hostname = get_canonical_hostname ($name_in, $hosts_ref);
+
+   Get the 'best' hostname from a number of alternatives.
+
+=cut
+sub get_canonical_hostname
+{
+    my $hostname_in = shift;
+    my $hosts_ref = shift;
+
+    foreach my $hostname (sort keys %{$hosts_ref}) {
+	my $a = get_hostdb_attr ('aliases', $hostname, $hosts_ref);
+	if ($a) {
+	    foreach my $aid (@{$a}) {
+		my $aliasname = $$hosts_ref{$hostname}{'host'}{'SU_HOSTDB'}{'alias'}{$aid}{'aliasname'};
+
+		return $hostname if ($aliasname eq $hostname_in);
+	    }
+	}
+    }
+
+    return $hostname_in;
+}
+
+=head2 get_hostdb_attr
+
+    my $value = get_hostdb_attr ('dnsstatus', $hostname, $hosts_ref);
+
+    Get a HOSTDB value from NERDS.
+
+=cut
+sub get_hostdb_attr
+{
+    my $attr = shift;
+    my $hostname = shift;
+    my $hosts_ref = shift;
+
+    my $id = get_hostdb_id ($hostname, $hosts_ref);
+    get_hostdb_attr_by_id ($id, $attr, $hostname, $hosts_ref);
+}
+
+=head2 get_hostdb_id
+
+    my $hostid = get_hostdb_id ($hostname, $hosts_ref);
+
+    Get the HOSTDB ID of a host.
+
+=cut
+sub get_hostdb_id
+{
+    my $hostname = shift;
+    my $hosts_ref = shift;
+
+    return undef unless defined ($$hosts_ref{$hostname});
+
+    foreach my $id (keys %{$$hosts_ref{$hostname}{'host'}{'SU_HOSTDB'}{'host'}}) {
+	if ($$hosts_ref{$hostname}{'host'}{'SU_HOSTDB'}{'host'}{$id}{'hostname'} eq $hostname) {
+            return int ($id);
+	}
+
+	# check aliases
+	my $a = $$hosts_ref{$hostname}{'host'}{'SU_HOSTDB'}{'host'}{$id}{'aliases'};
+	if ($a) {
+	    foreach my $aid (@{$a}) {
+		if ($$hosts_ref{$hostname}{'host'}{'SU_HOSTDB'}{'alias'}{$aid}{'aliasname'} eq $hostname) {
+		    return int ($id);
+		}
+	    }
+	}
+    }
+}
+
+=head2 get_hostdb_attr_by_id
+
+    my $value = get_hostdb_attr_by_id ($hostid, 'dnsstatus', $hostname, $hosts_ref);
+
+    Get a HOSTDB value from NERDS for a specific host id included in the NERDS
+    data for $hostname. The id typically points at a parent/child/alias host.
+
+=cut
+sub get_hostdb_attr_by_id
+{
+    my $id = shift;
+    my $attr = shift;
+    my $hostname = shift;
+    my $hosts_ref = shift;
+
+    return $$hosts_ref{$hostname}{'host'}{'SU_HOSTDB'}{'host'}{$id}{$attr};
 }
