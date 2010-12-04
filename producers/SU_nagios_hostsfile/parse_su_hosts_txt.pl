@@ -138,6 +138,7 @@ sub read_suhosts_file
     my $canon_hostdata = shift;
     my $debug = shift;
 
+    warn ("Loading su-hosts file '$fn'\n") if ($debug);
     open (FILE, "< $fn") or die ("$0: Could not open su-hosts file '$fn' for reading : $!\n");
 
     my $group = '';
@@ -162,19 +163,18 @@ sub read_suhosts_file
 	} elsif ($line =~ /^(\S+?)\s+(\S+?)\s+(.+)\s*$/o or
 		 $line =~ /^(\S+?)\s+(\S+?)\s*$/o) {
 	    # host line
-	    my $host = lc ($1);
+	    my $host_in = lc ($1);
 	    my $hostalive = $2;
 	    my $services_in = $3;
 
-	    my %res;
-
 	    if (defined ($hostdb) and
-		! $hostdb->clean_hostname ($host)) {
-		warn ("$0: Invalid hostname '$host' on line $. of file '$fn'\n");
+		! $hostdb->clean_hostname ($host_in)) {
+		warn ("$0: Invalid hostname '$host_in' on line $. of file '$fn'\n");
 		next;
 	    }
 
-	    $host = get_canonical_hostname ($host, $canon_hostdata);
+	    my $host = get_canonical_hostname ($host_in, $canon_hostdata);
+	    warn ("Canonical name for '$host_in' is '$host'\n") if ($debug and ($host ne $host_in));
 
 	    $services_in =~ s/\s*$//go;	# strip
 	    # look for backslash at end of services
@@ -198,9 +198,7 @@ sub read_suhosts_file
 	    my $service_count = 0 + @services;
 	    warn ("Host '$host' - $hostalive, $service_count service(s)\n") if ($debug);
 
-	    add_host (\%res, $host, $hostalive, \@services, $group, $admin, $desc);
-
-	    $$href{$host} = \%res;
+	    add_host ($href, $host, $hostalive, \@services, $group, $admin, $desc);
 	} else {
 	    die ("$0: Unparsable data, file '$fn' line $. : '$line'\n");
 	}
@@ -213,7 +211,7 @@ sub read_suhosts_file
 
 sub add_host
 {
-    my $res = shift;
+    my $href = shift;
     my $hostname = shift;
     my $hostalive = shift;
     my $services_ref = shift;
@@ -222,17 +220,17 @@ sub add_host
     my $groupdesc = shift;
 
     # mandatory basic NERDS data for a host
-    $$res{'host'}{'version'} = 1;
-    $$res{'host'}{'name'} = $hostname;
+    $$href{$hostname}{'host'}{'version'} = 1;
+    $$href{$hostname}{'host'}{'name'} = $hostname;
 
-    $$res{'host'}{'monitoring'}{'nagios'}{'version'} = '3.0';	# to prepare for future changes
-    $$res{'host'}{'monitoring'}{'nagios'}{'hostcheck'} = $hostalive;
-    $$res{'host'}{'monitoring'}{'nagios'}{'group'}{'name'} = $groupname;
-    $$res{'host'}{'monitoring'}{'nagios'}{'group'}{'admin'} = $groupadmin;
-    $$res{'host'}{'monitoring'}{'nagios'}{'group'}{'description'} = $groupdesc;
+    $$href{$hostname}{'host'}{'monitoring'}{'nagios'}{'version'} = '3.0';	# to prepare for future changes
+    $$href{$hostname}{'host'}{'monitoring'}{'nagios'}{'hostcheck'} = $hostalive;
+    $$href{$hostname}{'host'}{'monitoring'}{'nagios'}{'group'}{'name'} = $groupname;
+    $$href{$hostname}{'host'}{'monitoring'}{'nagios'}{'group'}{'admin'} = $groupadmin;
+    $$href{$hostname}{'host'}{'monitoring'}{'nagios'}{'group'}{'description'} = $groupdesc;
 
     foreach my $service (@{$services_ref}) {
-	add_check ($$res{'host'}{'monitoring'}{'nagios'}, $hostname, $service);
+	add_check ($$href{$hostname}{'host'}{'monitoring'}{'nagios'}, $hostname, $service);
     }
 }
 
@@ -462,6 +460,8 @@ sub get_hostdb_id
 
     return undef unless defined ($$hosts_ref{$hostname});
 
+    # Do brute-force search for a host with an alias matching $hostname.
+    # XXX this is a bit slow. Should build a canonical-hostnames hash on load instead.
     foreach my $id (keys %{$$hosts_ref{$hostname}{'host'}{'SU_HOSTDB'}{'host'}}) {
 	if ($$hosts_ref{$hostname}{'host'}{'SU_HOSTDB'}{'host'}{$id}{'hostname'} eq $hostname) {
             return int ($id);
