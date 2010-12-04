@@ -49,10 +49,10 @@ foreach my $input_dir (@input_dirs) {
     # output a JSON document for every host in %hostdata
     foreach my $host (sort keys %hostdata) {
 	my $thishost = $hostdata{$host};
-	
+
 	my $json = JSON->new->utf8->pretty (1)->canonical (1)->encode ($thishost);
 	#die ("JSON output for host '$host' :\n${json}\n\n");
-	
+
 	my $fn = "$input_dir/${host}..json";
 	warn ("Outputting to '$fn'\n") if ($debug);
 	open (OUT, "> $fn") or die ("$0: Could not open '$fn' for writing : $!\n");
@@ -180,11 +180,10 @@ sub process_file
     }
 
     # sort | uniq lists of Nagios groups
-    foreach my $type ('aux_hostgroups', 'service_groups') {
-	next unless $$t{'host'}{'SU_nagios_metadata'}{$type};
-
-	foreach my $check (keys %{$$t{'host'}{'SU_nagios_metadata'}{$type}}) {
-	    make_uniq ($$t{'host'}{'SU_nagios_metadata'}{$type}{$check});
+    make_uniq ($$t{'host'}{'SU_nagios_metadata'}{'aux_hostgroups'});
+    if ($$t{'host'}{'SU_nagios_metadata'}{'service_groups'}) {
+	foreach my $check (keys %{$$t{'host'}{'SU_nagios_metadata'}{'service_groups'}}) {
+	    make_uniq ($$t{'host'}{'SU_nagios_metadata'}{'service_groups'}{$check});
 	}
     }
 
@@ -195,6 +194,8 @@ sub process_file
 sub make_uniq
 {
     my $lref = shift;
+
+    return undef unless defined ($lref);
 
     eval { my $a = @{$lref}; };
     if ($@) {
