@@ -180,8 +180,8 @@ sub process_file
     }
 
     # sort | uniq lists of Nagios groups
-    make_uniq ($$t{'host'}{'SU_nagios_metadata'}{'aux_hostgroups'});
-    make_uniq ($$t{'host'}{'SU_nagios_metadata'}{'service_groups'});
+    make_uniq ($$t{'host'}{'SU_nagios_metadata'}{'aux_hostgroups'}) if ($$t{'host'}{'SU_nagios_metadata'}{'aux_hostgroups'});
+    make_uniq ($$t{'host'}{'SU_nagios_metadata'}{'service_groups'}) if ($$t{'host'}{'SU_nagios_metadata'}{'service_groups'});
 
     $$href{$hostname} = $t;
 }
