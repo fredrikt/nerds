@@ -117,13 +117,12 @@ sub get_nerds_data_dir
 }
 
 # Read and parse a potential NERDS data file. If it was a valid NERDS data file,
-# we fetch info from HOSTDB for the host in question, and store all that info in $href.
+# we do some data cleanup on it.
 sub process_file
 {
     my $file = shift;
     my $href = shift;
     my $debug = shift;
-    my $hostdb = shift;
 
     open (IN, "< $file") or die ("$0: Could not open '$file' for reading : $!\n");
     my $json = join ("", <IN>);
