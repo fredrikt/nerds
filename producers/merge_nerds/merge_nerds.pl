@@ -66,9 +66,10 @@ foreach my $input_dir (@input_dirs) {
 
     foreach my $producer (sort @producers) {
 	next if ($producer eq 'merge_nerds');	# skip my own output
-	warn ("Loading producer '$producer'...\n") if ($debug);
-
 	my $pd = get_nerds_data_dir ($input_dir, $producer);
+
+	warn ("Loading producer '$producer' from $pd...\n") if ($debug);
+
 	my @files = get_nerds_data_files ($pd);
 
 	foreach my $file (@files) {
