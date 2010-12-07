@@ -105,8 +105,7 @@ sub get_producers
     my $dir = "$input_dir/producers/";
     opendir (DIR, $dir) or return ();
     while (my $t = readdir (DIR)) {
-	next if ($t eq '.');
-	next if ($t eq '..');
+	next if ($t =~ /^\.);
 	next unless (-d "$input_dir/producers/$t");
 
 	push (@producers, $t);
