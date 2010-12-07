@@ -42,12 +42,15 @@ my @files;
 
 foreach my $input_dir (@input_dirs) {
     die ("$0: Invalid input dir '$input_dir'\n") unless (-d $input_dir);
+    warn ("Looking for producers in directory '$input_dir'...\n") if ($debug);
 
-    @files = get_producers_files ($input_dir);
-    if (! @files) {
+    my @t_files;
+
+    @t_files = get_producers_files ($input_dir);
+    if (! @t_files) {
 	# no producers under $input_dir, see if it points directly at some NERDS data files
 
-	my @t_files = get_nerds_data_files ($input_dir);
+	@t_files = get_nerds_data_files ($input_dir);
 
 	if (@t_files) {
 	    warn ("Loading files in directory '$input_dir'...\n") if ($debug);
@@ -55,14 +58,18 @@ foreach my $input_dir (@input_dirs) {
 	    foreach my $file (@t_files) {
 		push (@files, "$input_dir/$file");
 	    }
+	} else {
+	    die ("$0: Bad input directory : '$input_dir'\n");
 	}
+    } else {
+	push (@files, @t_files);
     }
 }
 
 my $hostdb;
 if (@files) {
     $hostdb = HOSTDB::DB->new (	inifile => HOSTDB::get_inifile (),
-				debug => $debug
+		#		debug => $debug
 	);
 }
 
@@ -108,13 +115,17 @@ sub get_producers_files
     my @res;
 
     foreach my $producer (sort @producers) {
-	warn ("Loading producer '$producer'...\n") if ($debug);
-
 	my $pd = get_nerds_data_dir ($input_dir, $producer);
 
+	warn ("Loading producer '$producer' ($pd)...\n") if ($debug);
+
+	my $count = 0;
 	foreach my $file (get_nerds_data_files ($pd)) {
 	    push (@res, "$pd/$file");
+	    $count++;
 	}
+
+	warn ("Loaded $count data files from $pd\n") if ($debug);
     }
 
     return @res;
@@ -130,8 +141,7 @@ sub get_producers
     my $dir = "$input_dir/producers/";
     opendir (DIR, $dir) or return ();
     while (my $t = readdir (DIR)) {
-	next if ($t eq '.');
-	next if ($t eq '..');
+	next if ($t =~ /^\./o);
 	next unless (-d "$input_dir/producers/$t");
 
 	push (@producers, $t);
@@ -215,7 +225,7 @@ sub process_file
     }
 
     if (! $host) {
-	warn ("HOST $hostname REMOVED\n");
+	warn ("HOST $hostname REMOVED\n") if ($debug);
 	$$hostdata_ref{$hostname}{'status'} = 'REMOVED';
     }
 }
