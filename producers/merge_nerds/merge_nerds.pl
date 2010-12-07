@@ -56,6 +56,8 @@ foreach my $input_dir (@input_dirs) {
 
 	if (@files) {
 	    warn ("Loading files in directory '$input_dir'...\n") if ($debug);
+	} else {
+	    die ("$0: Did not find neither producers nor NERDS files in '$input_dir'\n");
 	}
 
 	foreach my $file (@files) {
