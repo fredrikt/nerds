@@ -58,6 +58,8 @@ foreach my $input_dir (@input_dirs) {
 
 	if (@files) {
 	    warn ("Loading files in directory '$input_dir'...\n") if ($debug);
+	} else {
+	    die ("$0: Bad input directory '$input_dir' - neither producers nor NERDS data files found\n");
 	}
     }
 }
