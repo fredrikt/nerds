@@ -31,312 +31,360 @@ If you have Python <2.7 you need to install argparse manually.
 '''
 
 class Router:
-	def __init__(self):
-		self.name = ''
-		self.interfaces = []
+    def __init__(self):
+        self.name = ''
+        self.interfaces = []
+        self.bgp_peerings = []
 
-	def to_json(self):
-		j = {'name':self.name}
-		interfaces = []
-		for interface in self.interfaces:
-			interfaces.append(interface.to_json())
-		j['interfaces'] = interfaces
-		return j
+    def to_json(self):
+        j = {'name':self.name}
+        interfaces = []
+        for interface in self.interfaces:
+            interfaces.append(interface.to_json())
+        j['interfaces'] = interfaces
+        bgp_peerings = []
+        for peering in self.bgp_peerings:
+            bgp_peerings.append(peering.to_json())
+        j['bgp_peerings'] = bgp_peerings
+        return j
 
 class Interface:
-	def __init__(self):
-		self.name = ''
-		self.bundle = ''
-		self.desc = ''
-		self.vlantagging = ''
-		self.tunneldict = []
-		# Unit dict is a list of dictionaries containing units to
-		# interfaces, should be index like {'unit': 'name',
-		# 'desc': 'foo', 'vlanid': 'bar', 'address': 'xyz'}
-		self.unitdict = []
+    def __init__(self):
+        self.name = ''
+        self.bundle = ''
+        self.description = ''
+        self.vlantagging = ''
+        self.tunneldict = []
+        # Unit dict is a list of dictionaries containing units to
+        # interfaces, should be index like {'unit': 'name',
+        # 'desc': 'foo', 'vlanid': 'bar', 'address': 'xyz'}
+        self.unitdict = []
 
-	def to_json(self):
-		j = {'name':self.name, 'bundle':self.bundle, 'desc':self.desc,
-			'vlantagging':self.vlantagging, 'tunnels':self.tunneldict,
-			'units':self.unitdict}
-		return j
+    def to_json(self):
+        j = {'name':self.name, 'bundle':self.bundle,
+            'description':self.description,
+            'vlantagging':self.vlantagging, 'tunnels':self.tunneldict,
+            'units':self.unitdict}
+        return j
 
-def get_firstchild(element, arg):
-	'''
-	Helper function, takes xmlelement and a string.
-	Returns a string.
-	'''
-	data = element.getElementsByTagName(arg).item(0).firstChild.data
-	return data
+class BgpPeering:
+    def __init__(self):
+        self.type = None
+        self.remote_address = None
+        self.description = None
+        self.local_address = None
+        self.group = None
+        self.as_number = None
+
+    def to_json(self):
+        j = {'type':self.type,'remote_address':self.remote_address,
+            'description':self.description, 'local_address':self.local_address,
+            'group':self.group,'as_number':self.as_number}
+        return j
+
+
+def get_firstchild(element, tag):
+    '''
+    Takes xml element and a name of a tag.
+    Returns the data from a tag when looping over a parent.
+    '''
+    try:
+        data = element.getElementsByTagName(tag).item(0).firstChild.data
+    except AttributeError:
+        data = None
+    return data
 
 def get_hostname(xmldoc):
-	'''
-	Finds and returns the hostname from a JunOS config.
-	'''
-	re = xmldoc.getElementsByTagName('host-name')
-	try:
-		hostname = re[0].firstChild.data
-	except AttributeError:
-		print 'No host-name element in config file, check the config.'
-		sys.exit(1)
+    '''
+    Finds and returns the hostname from a JunOS config.
+    '''
+    re = xmldoc.getElementsByTagName('host-name')
+    domain = xmldoc.getElementsByTagName('domain-name')
 
-	if 're0' in hostname or 're1' in hostname:
-		hostname = hostname.replace('-re0','').replace('-re1','')
+    try:
+        hostname = '%s.%s' % (re[0].firstChild.data,
+                            domain[0].firstChild.data)
+    except AttributeError:
+        print 'No host-name element in config file, check the config.'
+        sys.exit(1)
 
-	return hostname
+    if 're0' in hostname or 're1' in hostname:
+        hostname = hostname.replace('-re0','').replace('-re1','')
+
+    return hostname
 
 def get_interfaces(xmldoc):
-	'''
-	Returns a list of Interface objects made out from all "interesting"
-	interfaces in the JunOS config.
+    '''
+    Returns a list of Interface objects made out from all interfaces in
+    the JunOS config.
 
-	Maybe this should be all interfaces and let a consumer care about
-	interesting.
+    Dive in to Python writes:
+    "When you parse an XML document, you get a bunch of Python objects
+    that represent all the pieces of the XML document, and some of these
+    Python objects represent attributes of the XML elements. But the
+    (Python) objects that represent the (XML) attributes also have
+    (Python) attributes, which are used to access various parts of the
+    (XML) attribute that the object represents." ARGH ;)
+    '''
 
-	Dive in to Python writes:
-	"When you parse an XML document, you get a bunch of Python objects
-	that represent all the pieces of the XML document, and some of these
-	Python objects represent attributes of the XML elements. But the
-	(Python) objects that represent the (XML) attributes also have
-	(Python) attributes, which are used to access various parts of the
-	(XML) attribute that the object represents." ARGH ;)
-	'''
+    interfaces = xmldoc.getElementsByTagName('interfaces')
+    listofinterfaces = []
 
-	interfaces = xmldoc.getElementsByTagName('interfaces')
-	listofinterfaces = []
+    for i in interfaces:
+        interface = list(i.getElementsByTagName('interface'))
 
-	for item in interfaces:
-		try:
-			interface = list(xmldoc.getElementsByTagName('interface'))
-		except AttributeError:
-			pass
+    for elements in interface:
+        tempInterface = Interface()
 
-	for elements in interface:
-		tempInterface = Interface()
-		try:
-			tempInterface.name = get_firstchild(elements, 'name')
-		except AttributeError:
-			pass
-		try:
-			vlantag = elements.getElementsByTagName(
-				'vlan-tagging').item(0)
-			if vlantag != None:
-				tempInterface.vlantagging = True
-			else:
-				tempInterface.vlantagging = False
-		except AttributeError:
-			pass
-		try:
-			tempInterface.bundle = get_firstchild(elements, 'bundle')
-		except AttributeError:
-			pass
-		try:
-			tempInterface.desc = get_firstchild(elements, 'description')
-		except AttributeError:
-			tempInterface.desc = 'No description set, fix me!'
-		try:
-			source = get_firstchild(elements, 'source')
-			destination = get_firstchild(elements, 'destination')
-			tempInterface.tunneldict.append({'source' : source,
-				'destination': destination})
-		except AttributeError:
-			pass
+        # Interface name, ge-0/1/0 or similar
+        tempInterface.name = get_firstchild(elements, 'name')
 
-		units = elements.getElementsByTagName('unit')
-		unitemp = ''
-		desctemp = ''
-		vlanidtemp = ''
-		nametemp = ''
-		for unit in units:
-			unittemp = get_firstchild(unit, 'name')
-			try:
-				desctemp = get_firstchild(unit, 'description')
-			except AttributeError:
-				pass
-			try:
-				vlanidtemp = get_firstchild(unit, 'vlan-id')
-			except AttributeError:
-				pass
-			addresses = unit.getElementsByTagName('address')
-			nametemp = []
-			for address in addresses:
-				nametemp.append(get_firstchild(address, 'name'))
+        # Is the interface vlan-tagging?
+        vlantag = elements.getElementsByTagName('vlan-tagging').item(0)
+        if vlantag != None:
+            tempInterface.vlantagging = True
+        else:
+            tempInterface.vlantagging = False
 
-			tempInterface.unitdict.append({'unit': unittemp, 'name': desctemp, 'vlanid': vlanidtemp, 'address': nametemp})
-		listofinterfaces.append(tempInterface)
+        # Is it a bundled interface?
+        tempInterface.bundle = get_firstchild(elements, 'bundle')
 
-	return listofinterfaces
+        # Get the interface description
+        tempInterface.desc = get_firstchild(elements, 'description')
+
+        # Get tunnel information if any
+        source = get_firstchild(elements, 'source')
+        destination = get_firstchild(elements, 'destination')
+        tempInterface.tunneldict.append({'source' : source,
+            'destination': destination})
+
+        # Get all information per interface unit
+        units = elements.getElementsByTagName('unit')
+        unitemp = ''
+        desctemp = ''
+        vlanidtemp = ''
+        nametemp = ''
+        for unit in units:
+            unittemp = get_firstchild(unit, 'name')
+            desctemp = get_firstchild(unit, 'description')
+            vlanidtemp = get_firstchild(unit, 'vlan-id')
+            addresses = unit.getElementsByTagName('address')
+            nametemp = []
+            for address in addresses:
+                nametemp.append(get_firstchild(address, 'name'))
+
+            tempInterface.unitdict.append({'unit': unittemp,
+                'description': desctemp, 'vlanid': vlanidtemp,
+                'address': nametemp})
+
+        # Add interface to the collection of interfaces
+        listofinterfaces.append(tempInterface)
+
+    return listofinterfaces
+
+def get_bgp_peerings(xmldoc):
+    '''
+    Returns a list of all BGP peerings in the JunOS configuration.
+    '''
+    bgp = xmldoc.getElementsByTagName('bgp')
+    groups = bgp[0].getElementsByTagName('group')
+    list_of_peerings = []
+
+    for element in groups:
+        group_name = get_firstchild(element, 'name')
+        group_type = get_firstchild(element, 'type')
+        # Seems like only internal BGP peerings have local-address
+        # set. Need to find a good way to get it for external
+        # peerings as well. Erik talked about matching sub nets.
+        local_address = get_firstchild(element, 'local-address')
+
+        neighbors = element.getElementsByTagName('neighbor')
+        for neighbor in neighbors:
+            #if not neighbor.hasAttribute('inactive')
+            peering = BgpPeering()
+            peering.type = group_type
+            peering.remote_address = get_firstchild(neighbor, 'name')
+            peering.description = get_firstchild(neighbor,
+                'description')
+            peering.local_address = local_address
+            peering.group = group_name
+            peering.as_number = get_firstchild(neighbor,'peer-as')
+            list_of_peerings.append(peering)
+
+    return list_of_peerings
+
 
 def parse_router(xmldoc):
-	'''
-	Takes a JunOS conf in XML format and returns a Router object.
-	'''
-	router = Router()
-	router.name = get_hostname(xmldoc)
-	router.interfaces = get_interfaces(xmldoc)
+    '''
+    Takes a JunOS conf in XML format and returns a Router object.
+    '''
+    router = Router()
+    router.name = get_hostname(xmldoc)
+    router.interfaces = get_interfaces(xmldoc)
+    router.bgp_peerings = get_bgp_peerings(xmldoc)
 
-	return router
+    return router
 
 def init_config(path):
-	'''
-	Initializes the configuration file located in the path provided.
-	'''
-	try:
-	   config = ConfigParser.SafeConfigParser()
-	   config.read(path)
-	   return config
-	except IOError as (errno, strerror):
-		print "I/O error({0}): {1}".format(errno, strerror)
+    '''
+    Initializes the configuration file located in the path provided.
+    '''
+    try:
+       config = ConfigParser.SafeConfigParser()
+       config.read(path)
+       return config
+    except IOError as (errno, strerror):
+        print "I/O error({0}): {1}".format(errno, strerror)
 
 def get_local_xml(f):
-	'''
-	Parses the provided file to an XML document and returns it.
+    '''
+    Parses the provided file to an XML document and returns it.
 
-	Returns False if the XML is malformed.
-	'''
-	try:
-		xmldoc = minidom.parse(f)
-	except ExpatError:
-		print 'Malformed XML input from %s.' % host
-		return False
+    Returns False if the XML is malformed.
+    '''
+    try:
+        xmldoc = minidom.parse(f)
+    except ExpatError:
+        print 'Malformed XML input from %s.' % host
+        return False
 
-	return xmldoc
+    return xmldoc
 
 def get_remote_xml(host, username, password):
-	'''
-	Tries to ssh to the supplied JunOS machine and execute the command
-	to show current configuration i XML format.
+    '''
+    Tries to ssh to the supplied JunOS machine and execute the command
+    to show current configuration i XML format.
 
-	Returns False if the configuration could not be retrived.
-	'''
-	try:
-		import pexpect
-	except ImportError:
-		print 'Install module pexpect to be able to use remote sources.'
-		return False
+    Returns False if the configuration could not be retrived.
+    '''
+    try:
+        import pexpect
+    except ImportError:
+        print 'Install module pexpect to be able to use remote sources.'
+        return False
 
-	ssh_newkey = 'Are you sure you want to continue connecting'
-	login_choices = [ssh_newkey, 'Password:', 'password:', pexpect.EOF]
+    ssh_newkey = 'Are you sure you want to continue connecting'
+    login_choices = [ssh_newkey, 'Password:', 'password:', pexpect.EOF]
 
-	try:
-		s = pexpect.spawn('ssh %s@%s' % (username,host))
-		print 'Trying to connect to %s@%s...' % (username, host)
-		i = s.expect(login_choices)
-		if i == 0:
-			print "Storing SSH key."
-			s.sendline('yes')
-			i = s.expect(login_choices)
-		if i == 1 or i == 2:
-			s.sendline(password)
-			print 'Connected to %s.' % host
-		elif i == 3:
-			print "I either got key problems or connection timeout."
-			return False
-		s.expect('>', timeout=60)
-		# Send JunOS command for displaying the configuration in XML
-		# format.
-		s.sendline ('show configuration | display xml | no-more')
-		s.expect('</rpc-reply>', timeout=120) 	# expect end of the XML
-												# blob
-		xml = s.before # take everything printed before last expect()
-		s.sendline('exit')
-	except pexpect.ExceptionPexpect:
-		print 'Timed out in %s.' % host
-		return False
+    try:
+        s = pexpect.spawn('ssh %s@%s' % (username,host))
+        print 'Trying to connect to %s@%s...' % (username, host)
+        i = s.expect(login_choices)
+        if i == 0:
+            print "Storing SSH key."
+            s.sendline('yes')
+            i = s.expect(login_choices)
+        if i == 1 or i == 2:
+            s.sendline(password)
+            print 'Connected to %s.' % host
+        elif i == 3:
+            print "I either got key problems or connection timeout."
+            return False
+        s.expect('>', timeout=60)
+        # Send JunOS command for displaying the configuration in XML
+        # format.
+        s.sendline ('show configuration | display xml | no-more')
+        s.expect('</rpc-reply>', timeout=120)   # expect end of the XML
+                                                # blob
+        xml = s.before # take everything printed before last expect()
+        s.sendline('exit')
+    except pexpect.ExceptionPexpect:
+        print 'Timed out in %s.' % host
+        return False
 
-	xml += '</rpc-reply>' # Add the end element as pexpect steals it
-	# Remove the first line in the output which is the command sent
-	# to JunOS.
-	xml = xml.lstrip('show configuration | display xml | no-more')
-	try:
-		xmldoc = minidom.parseString(xml)
-	except ExpatError:
-		print 'Malformed XML input from %s.' % host
-		return False
+    xml += '</rpc-reply>' # Add the end element as pexpect steals it
+    # Remove the first line in the output which is the command sent
+    # to JunOS.
+    xml = xml.lstrip('show configuration | display xml | no-more')
+    try:
+        xmldoc = minidom.parseString(xml)
+    except ExpatError:
+        print 'Malformed XML input from %s.' % host
+        return False
 
-	return xmldoc
+    return xmldoc
 
 def main():
 
-	# User friendly usage output
-	parser = argparse.ArgumentParser()
-	parser.add_argument('-C', nargs='?',
-		help='Path to the configuration file.')
-	parser.add_argument('-O', nargs='?',
-		help='Path to output directory.')
-	parser.add_argument('-N', action='store_true',
-		help='Don\'t write output to disk.')
-	args = parser.parse_args()
+    # User friendly usage output
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-C', nargs='?',
+        help='Path to the configuration file.')
+    parser.add_argument('-O', nargs='?',
+        help='Path to output directory.')
+    parser.add_argument('-N', action='store_true',
+        help='Don\'t write output to disk.')
+    args = parser.parse_args()
 
-	# Load the configuration file
-	if args.C == None:
-		print 'Please provide a configuration file with -C.'
-		sys.exit(1)
-	else:
-		config = init_config(args.C)
+    # Load the configuration file
+    if args.C == None:
+        print 'Please provide a configuration file with -C.'
+        sys.exit(1)
+    else:
+        config = init_config(args.C)
 
-	# List to collect configuration in XML document format for parsing
-	xmldocs = []
+    # List to collect configuration in XML document format for parsing
+    xmldocs = []
 
-	# Process local files
-	local_sources = config.get('sources', 'local').split()
-	for f in local_sources:
-		xmldoc = get_local_xml(f)
-		if xmldoc:
-			xmldocs.append(xmldoc)
+    # Process local files
+    local_sources = config.get('sources', 'local').split()
+    for f in local_sources:
+        xmldoc = get_local_xml(f)
+        if xmldoc:
+            xmldocs.append(xmldoc)
 
-	# Process remote hosts
-	remote_sources = config.get('sources', 'remote').split()
-	for host in remote_sources:
-		xmldoc = get_remote_xml(host, config.get('ssh', 'user'),
-			config.get('ssh', 'password'))
-		if xmldoc:
-			xmldocs.append(xmldoc)
+    # Process remote hosts
+    remote_sources = config.get('sources', 'remote').split()
+    for host in remote_sources:
+        xmldoc = get_remote_xml(host, config.get('ssh', 'user'),
+            config.get('ssh', 'password'))
+        if xmldoc:
+            xmldocs.append(xmldoc)
 
-	# Parse the xml documents to create Router objects
-	parsed_conf_xml = []
-	for doc in xmldocs:
-		parsed_conf_xml.append(parse_router(doc))
+    # Parse the xml documents to create Router objects
+    parsed_conf_xml = []
+    for doc in xmldocs:
+        parsed_conf_xml.append(parse_router(doc))
 
-	# Call .tojson() for all Router objects and merge that with the
-	# nerds template. Store the json in the dictionary out with the key
-	# name.
-	out = {}
-	for c in parsed_conf_xml:
-		template = {'host':{'name': c.name, 'version': 1,
-			'juniper_conf': {}}}
-		template['host']['juniper_conf'] = c.to_json()
-		out[c.name] = json.dumps(template, indent=4)
+    # Call .tojson() for all Router objects and merge that with the
+    # nerds template. Store the json in the dictionary out with the key
+    # name.
+    out = {}
+    for c in parsed_conf_xml:
+        template = {'host':{'name': c.name, 'version': 1,
+            'juniper_conf': {}}}
+        template['host']['juniper_conf'] = c.to_json()
+        out[c.name] = json.dumps(template, indent=4)
 
-	# Output directory should be ./json/ if nothing else is specified
-	out_dir = './json/'
+    # Output directory should be ./json/ if nothing else is specified
+    out_dir = './json/'
 
-	# Depending on which arguments the user provided print to file or
-	# to stdout.
-	if args.N is True:
-		for key in out:
-			print out[key]
-	else:
-		if args.O:
-			out_dir = args.O
-		# Pad with / if user provides a broken path
-		if out_dir[-1] != '/':
-			out_dir += '/'
-		for key in out:
-			try:
-				try:
-					f = open('%s%s' % (out_dir, key), 'w')
-				except IOError:
-					# The directory to write in must exist
-					os.mkdir(out_dir)
-					f = open('%s%s' % (out_dir, key), 'w')
-				f.write(out[key])
-				f.close()
-			except IOError as (errno, strerror):
-				print "I/O error({0}): {1}".format(errno, strerror)
+    # Depending on which arguments the user provided print to file or
+    # to stdout.
+    if args.N is True:
+        for key in out:
+            print out[key]
+    else:
+        if args.O:
+            out_dir = args.O
+        # Pad with / if user provides a broken path
+        if out_dir[-1] != '/':
+            out_dir += '/'
+        for key in out:
+            try:
+                try:
+                    f = open('%s%s.json' % (out_dir, key), 'w')
+                except IOError:
+                    # The directory to write in must exist
+                    os.mkdir(out_dir)
+                    f = open('%s%s.json' % (out_dir, key), 'w')
+                f.write(out[key])
+                f.close()
+            except IOError as (errno, strerror):
+                print "I/O error({0}): {1}".format(errno, strerror)
 
-	return 0
+    return 0
 
 if __name__ == '__main__':
-	main()
+    main()
 
