@@ -19,6 +19,7 @@ my @nrpe_checks = ('check_disk',
 		   'check_sensor',
 		   'check_ntp_time',
 		   'check_sua_ubuntu',
+		   'check_shib_sp_status',
 		   # SU Windows server checks
 		   'Checkservice',
 		   'CPU_Usage',
@@ -139,11 +140,12 @@ sub process_file
 
     my $hostname = $$t{'host'}{'name'};
     foreach my $family (keys %{$$t{'host'}{'services'}}) {
-	foreach my $addr (keys %{$$t{'host'}{'services'}{$family}}) {
+	ADDR: foreach my $addr (keys %{$$t{'host'}{'services'}{$family}}) {
 	    foreach my $proto (keys %{$$t{'host'}{'services'}{$family}{$addr}}) {
 		foreach my $port (keys %{$$t{'host'}{'services'}{$family}{$addr}{$proto}}) {
 		    if ($port == $nrpe_port) {
-			probe_nrpe ($hostname, $href, $nrpe_port, $nrpe_cmd, $nrpe_checks_ref, $debug);
+			my $res = probe_nrpe ($hostname, $href, $nrpe_port, $nrpe_cmd, $nrpe_checks_ref, $debug);
+			next ADDR unless ($res);
 		    }
 		}
 	    }
@@ -165,10 +167,21 @@ sub probe_nrpe
 	    $$href{$hostname}{'host'}{'name'} = $hostname;
 
 	    $$href{$hostname}{'host'}{'nagios_nrpe'}{$check}{'working'} = JSON::true;
-	} elsif ($out =~ /^NRPE: Command .* not defined/o) {
+	} elsif ($out =~ /^NRPE: Command .* not defined/o or
+		 $out =~ /No handler for that command/o) {
 	    warn ("         - NO\n") if ($debug);
+	} elsif (
+	    $out =~ /Received 0 bytes from daemon./o or
+	    $out =~ /Error - Could not complete SSL handshake/o or
+	    $out =~ /CHECK_NRPE: Socket timeout /o or
+	    $out =~ /Connection refused or timed out/o
+	    ) {
+	    warn ("Giving up on host '$hostname'\n");
+	    return 0;
 	} else {
-	    warn ("Unknown output of check_nrpe on $hostname : $out\n");
+	    warn ("Unknown output of $check probe on $hostname : $out\n");
 	}
     }
+
+    return 1;
 }

@@ -9,7 +9,7 @@ use Getopt::Long;
 use Data::Dumper;
 use JSON;
 
-my $MYNAME = 'SU_HOSTDB';
+my $MYNAME = 'SU_nagios_hostsfile';
 my $debug = 0;
 my $o_help = 0;
 my @input_dirs;
@@ -117,7 +117,7 @@ sub get_nerds_data_dir
 }
 
 # Read and parse a potential NERDS data file. If it was a valid NERDS data file,
-# we do some data cleanup on it.
+# we delete any existing SU_nagios_hostsfile in it.
 sub process_file
 {
     my $file = shift;
@@ -141,71 +141,14 @@ sub process_file
 	die ("$0: Can't interpret NERDS data of version '$nerds_version' in file '$file'\n");
     }
 
-    if (! $$t{'host'}{$MYNAME}) {
-	warn ("Skipping $file (no {'host'}{$MYNAME})\n") if ($debug);
+    if (! $$t{'host'}{'monitoring'}{'nagios'}) {
+	warn ("Skipping $file (no {'host'}{'monitoring'}{'nagios'})\n") if ($debug);
 	return;
     }
 
-    foreach my $id (keys %{$$t{'host'}{$MYNAME}{'host'}}) {
-	if ($$t{'host'}{$MYNAME}{'host'}{$id}{'aliases'}) {
-	    #warn ("UNIQ : " . Dumper ($$t{'host'}{$MYNAME}{'host'}{$id}) . "\n");
-	    make_uniq ($$t{'host'}{$MYNAME}{'host'}{$id}{'aliases'});
-	    #warn ("AFTER : " . Dumper ($$t{'host'}{$MYNAME}{'host'}{$id}) . "\n");
-	}
+    warn ("Deleting data from $file :\n" . Dumper ($$t{'host'}{'monitoring'}{'nagios'}) . "\n") if ($debug);
 
-	# subnet->id changed to subnet_id
-	delete ($t->{'host'}{$MYNAME}{'host'}{$id}{'subnet'});
-    }
-
-    # cruft from early development of nmap_services
-    delete ($t->{'host'}{'os'});
-    delete ($t->{'host'}{'status'});
-
-    # don't want msrpc ports in my NERDS data repository
-    foreach my $family (keys %{$$t{'host'}{'services'}}) {
-	foreach my $addr (keys %{$$t{'host'}{'services'}{$family}}) {
-	    foreach my $proto (keys %{$$t{'host'}{'services'}{$family}{$addr}}) {
-		foreach my $port (sort keys %{$$t{'host'}{'services'}{$family}{$addr}{$proto}}) {
-		    next if int ($port) < 1024;
-
-		    my $nmap_name = $$t{'host'}{'services'}{$family}{$addr}{$proto}{$port}{'name'};
-		    my $nmap_proto = $$t{'host'}{'services'}{$family}{$addr}{$proto}{$port}{'proto'};
-		    if ($nmap_name eq 'msrpc' and $nmap_proto eq 'unknown') {
-			delete ($t->{'host'}{'services'}{$family}{$addr}{$proto}{$port});
-		    }
-		}
-	    }
-	}
-    }
-
-    # sort | uniq lists of Nagios groups
-    make_uniq ($$t{'host'}{'SU_nagios_metadata'}{'aux_hostgroups'});
-    if ($$t{'host'}{'SU_nagios_metadata'}{'service_groups'}) {
-	foreach my $check (keys %{$$t{'host'}{'SU_nagios_metadata'}{'service_groups'}}) {
-	    make_uniq ($$t{'host'}{'SU_nagios_metadata'}{'service_groups'}{$check});
-	}
-    }
+    delete ($$t{'host'}->{'host'}{'monitoring'}{'nagios'});
 
     $$href{$hostname} = $t;
-}
-
-# `sort | uniq` of a list reference
-sub make_uniq
-{
-    my $lref = shift;
-
-    return undef unless defined ($lref);
-
-    eval { my $a = @{$lref}; };
-    if ($@) {
-	warn ("$0: make_uniq called with bad input ($@) :\n" . Dumper ($lref) . "\n");
-	return undef;
-    }
-
-    my %hash;
-    foreach my $t (@{$lref}) {
-	$hash{$t} = 1;
-    }
-
-    @{$lref} = sort keys (%hash);
 }

@@ -56,6 +56,8 @@ foreach my $input_dir (@input_dirs) {
 
 	if (@files) {
 	    warn ("Loading files in directory '$input_dir'...\n") if ($debug);
+	} else {
+	    die ("$0: Did not find neither producers nor NERDS files in '$input_dir'\n");
 	}
 
 	foreach my $file (@files) {
@@ -66,9 +68,10 @@ foreach my $input_dir (@input_dirs) {
 
     foreach my $producer (sort @producers) {
 	next if ($producer eq 'merge_nerds');	# skip my own output
-	warn ("Loading producer '$producer'...\n") if ($debug);
-
 	my $pd = get_nerds_data_dir ($input_dir, $producer);
+
+	warn ("Loading producer '$producer' from $pd...\n") if ($debug);
+
 	my @files = get_nerds_data_files ($pd);
 
 	foreach my $file (@files) {
@@ -105,8 +108,7 @@ sub get_producers
     my $dir = "$input_dir/producers/";
     opendir (DIR, $dir) or return ();
     while (my $t = readdir (DIR)) {
-	next if ($t eq '.');
-	next if ($t eq '..');
+	next if ($t =~ /^\./o);
 	next unless (-d "$input_dir/producers/$t");
 
 	push (@producers, $t);
