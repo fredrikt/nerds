@@ -186,7 +186,7 @@ sub process_file
     if ($nerds_version != 1) {
 	die ("$0: Can't interpret NERDS data of version '$nerds_version' in file '$file'\n");
     }
-    
+
     foreach my $rdir (@{$rancid_dirs_ref}) {
 	my $t_hostname = $hostname;
 	# Small tweak for Stockholm university. Turn nmap_services detected hostname
@@ -201,12 +201,17 @@ sub process_file
 	    # mandatory basic NERDS data for a host
 	    $res{'host'}{'version'} = 1;
 	    $res{'host'}{'name'} = $hostname;
-	    
+
 	    my %info;
 	    my $type;
 
+	    # for debugging
+	    my $read = 0;
+	    my $skipped = 0;
+
 	    open (CFG, " < $rancid_file") or die ("$0: Could not open '$rancid_file' for reading : $!\n");
 	    while (my $line = <CFG>) {
+		$read++;
 		if (! $type) {
 		    if ($line =~ /^\!RANCID-CONTENT-TYPE: (cisco|cisco-cat)$/o) {
 			$type = $1;
@@ -218,7 +223,7 @@ sub process_file
 		}
 
 		last if ($line =~ /^[^!]/o);	# line not starting with exclamation mark
-		
+
 		if ($line =~ /^\!Chassis type: (.+?) - (.+?)$/o) {
 		    $info{'chassis'} = $1;
 		    $info{'hw_description'} = $2;
@@ -245,25 +250,31 @@ sub process_file
 		    $info{'image'}{'file'} = $1;
 		    next;
 		}
-		
+
 		if ($line =~ /^\!Bootstrap: (.+)$/o) {
 		    $info{'bootstrap'} = $1;
+		    next;
 		}
 
 		if ($line =~ /^\!BOOTLDR: (.+)$/o) {
 		    $info{'bootloader'} = $1;
+		    next;
 		}
 
-		foreach my $key (sort keys %info) {
-		    my $value = $info{$key};
-		    next unless (defined ($value));
-		    
-		    $res{'host'}{$MYNAME}{$key} = $value;
-		}
+		$skipped++;
 	    }
-	    
+
+	    warn ("'$rancid_file' : read $read, skipped $skipped lines.\n") if ($debug);
+
 	    close (CFG);
-	    
+
+	    foreach my $key (sort keys %info) {
+		my $value = $info{$key};
+		next unless (defined ($value));
+
+		$res{'host'}{$MYNAME}{$key} = $value;
+	    }
+
 	    $$href{$hostname} = \%res;
 	} else {
 	    warn ("Found no Rancid data for host '$hostname' in '$rdir'\n") if ($debug);
