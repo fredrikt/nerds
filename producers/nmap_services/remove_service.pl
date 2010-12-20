@@ -3,6 +3,9 @@
 # Remove a service from one or more NERDS data files. Typically used
 # after you turn of a service on a host.
 #
+# Copyright (c) 2010, Avdelningen för IT och media, Stockholm university
+# See the file LICENSE for full license.
+#
 
 use strict;
 use Getopt::Long;

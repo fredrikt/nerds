@@ -3,6 +3,9 @@
 # Check all NERDS JSON data files and remove the ones for hosts not (any longer)
 # found in HOSTDB.
 #
+# Copyright (c) 2010, Avdelningen för IT och media, Stockholm university
+# See the file LICENSE for full license.
+#
 
 use strict;
 use Getopt::Long;
@@ -216,7 +219,7 @@ sub process_file
 	# Check that hostdb ID still matches, and warn if it does not
 	my $id = $host->id ();
 	my $nerds_id = get_host_id ($t, $hostname);
-	
+
 	if ($id != $nerds_id) {
 	    warn ("WARNING: Host $hostname has ID $id in HOSTDB, but $nerds_id in $file\n");
 	} else {
