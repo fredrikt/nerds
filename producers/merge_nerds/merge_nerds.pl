@@ -2,6 +2,9 @@
 #
 # This producer merges the result of other producers into a single JSON document.
 #
+# Copyright (c) 2010, Avdelningen för IT och media, Stockholm university
+# See the file LICENSE for full license.
+#
 
 use strict;
 use Getopt::Long;

@@ -4,6 +4,9 @@
 # could be information about auxillary host groups we want a host
 # to be a member of, for example.
 #
+# Copyright (c) 2010, Avdelningen för IT och media, Stockholm university
+# See the file LICENSE for full license.
+#
 
 use strict;
 use Getopt::Long;

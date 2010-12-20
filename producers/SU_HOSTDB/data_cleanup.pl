@@ -3,6 +3,9 @@
 # Various clean up operations for SU_HOSTDB data. For example, merge_nerds
 # make us end up with lists of aliases containing duplicates.
 #
+# Copyright (c) 2010, Avdelningen för IT och media, Stockholm university
+# See the file LICENSE for full license.
+#
 
 use strict;
 use Getopt::Long;

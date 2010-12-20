@@ -3,6 +3,9 @@
 # This producer fetches info about hosts we have JSON data for from HOSTDB,
 # which is the host management system in use at Stockholm university.
 #
+# Copyright (c) 2010, Avdelningen för IT och media, Stockholm university
+# See the file LICENSE for full license.
+#
 
 use strict;
 use Getopt::Long;

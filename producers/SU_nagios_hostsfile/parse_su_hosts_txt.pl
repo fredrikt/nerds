@@ -1,4 +1,8 @@
 #!/usr/bin/env perl
+#
+# Copyright (c) 2010, Avdelningen för IT och media, Stockholm university
+# See the file LICENSE for full license.
+#
 
 
 =head1 NAME

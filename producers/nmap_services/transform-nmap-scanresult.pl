@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #
 # Read one or more Nmap XML output files and produce NERDS data files
-# for all hosts scanned. 
+# for all hosts scanned.
 #
 # We only pick out data that is 'stable', meaning
 # that a subsequent run of the scan is at least very likely to produce
@@ -10,6 +10,9 @@
 # For now, the MAC address information is not brought along because
 # the availability of the MAC address depends on from what host the
 # scan is performed.
+#
+# Copyright (c) 2010, Avdelningen för IT och media, Stockholm university
+# See the file LICENSE for full license.
 #
 
 use strict;
