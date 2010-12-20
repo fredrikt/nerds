@@ -1,8 +1,4 @@
 #!/usr/bin/env perl
-#
-# $Id$
-# $HeadURL$
-#
 
 use strict;
 use Getopt::Long;
