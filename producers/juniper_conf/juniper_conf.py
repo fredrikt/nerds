@@ -26,6 +26,9 @@ import ConfigParser
 import argparse
 
 '''
+JUNOS configuration producer written for the NERDS project 
+(http://github.com/fredrikt/nerds/).
+
 Depends on pexpect for remote config gathering.
 If you have Python <2.7 you need to install argparse manually.
 '''
@@ -244,8 +247,8 @@ def get_local_xml(f):
     '''
     try:
         xmldoc = minidom.parse(f)
-    except ExpatError:
-        print 'Malformed XML input from %s.' % host
+    except minidom.ExpatError:
+        print 'Malformed XML input from %s.' % f
         return False
 
     return xmldoc
@@ -268,15 +271,12 @@ def get_remote_xml(host, username, password):
 
     try:
         s = pexpect.spawn('ssh %s@%s' % (username,host))
-        print 'Trying to connect to %s@%s...' % (username, host)
         i = s.expect(login_choices)
         if i == 0:
-            print "Storing SSH key."
             s.sendline('yes')
             i = s.expect(login_choices)
         if i == 1 or i == 2:
             s.sendline(password)
-            print 'Connected to %s.' % host
         elif i == 3:
             print "I either got key problems or connection timeout."
             return False
@@ -298,7 +298,7 @@ def get_remote_xml(host, username, password):
     xml = xml.lstrip('show configuration | display xml | no-more')
     try:
         xmldoc = minidom.parseString(xml)
-    except ExpatError:
+    except minidom.ExpatError:
         print 'Malformed XML input from %s.' % host
         return False
 
