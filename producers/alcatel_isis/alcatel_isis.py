@@ -323,12 +323,12 @@ def main():
             for host in out:
                 hostn = host['host']['name']
                 try:
-                    f = open('%s%s' % (out_dir, hostn), 'w')
+                    f = open('%s%s.json' % (out_dir, hostn), 'w')
                 except IOError as (errno, strerror):
                     print "I/O error({0}): {1}".format(errno, strerror)
                     # The directory to write in must exist
                     os.mkdir(out_dir)
-                    f = open('%s%s' % (out_dir, hostn), 'w')
+                    f = open('%s%s.json' % (out_dir, hostn), 'w')
                 f.write(json.dumps(host, sort_keys=True, indent=4))
                 f.close()
         except IOError as (errno, strerror):
