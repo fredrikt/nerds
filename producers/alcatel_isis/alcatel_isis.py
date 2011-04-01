@@ -46,10 +46,10 @@ class Node:
     '''
     Class to contain the node name and its neighbours.
     '''
-    def __init__(self, name, data={}):
+    def __init__(self, name):
         self.name = name
         self.neighbours = []
-        self.data = data
+        self.data = {}
 
     def __unicode__(self):
         return self.name
@@ -62,7 +62,11 @@ class Node:
         return 0
 
     def to_json(self):
-        j = {'name': self.name, 'neighbours': [], 'data': self.data}
+        if self.data:
+            name = self.data['name']
+        else:
+            name = self.name
+        j = {'name': name, 'neighbours': [], 'data': self.data}
         for neighbour in self.neighbours:
             j['neighbours'].append(neighbour.to_json())
         return j
@@ -126,6 +130,9 @@ def lookup_osi(osi_system_id, nsap_mapping):
     full_iso_address = '%s%s%s' % (area_id, osi_system_id, selector_id)
     for item in nsap_mapping:
         if item['osi_address'] == full_iso_address.replace('.',''):
+            #DEBUG
+            #print full_iso_address.replace('.','')
+            #print item
             return item
     return None
 
@@ -219,12 +226,18 @@ def process_isis_output(f, nsap_mapping=None):
                     if nsap_mapping:
                         data = lookup_osi(name, nsap_mapping)
                         if data:
-                            node.name = data['name']
+                            #node.name = data['name']
+                            #DEBUG
+                            #print '1 %s' % node.data
                             node.data.update(data)
+                            #print '2 %s' % node.data
+                        data = None
                     if node in nodes:
                         merge_nodes(node, nodes)                        
                     else:
                         nodes.append(node)
+                        #DEBUG
+                        #print node.to_json()
                     node = None
                 # Remove the last dot and everything after that in name
                 name = '.'.join(line_list[0].split('.')[:-1])
@@ -272,6 +285,9 @@ def main():
                 tmp[key_list[i]] = value_list[i]
             nsap_mapping.append(tmp)
             line = normalize_whitespace(m.readline())
+        #DEBUG
+        #print json.dumps(nsap_mapping, sort_keys=True, indent=4)
+        #sys.exit(0)
 
     # Node collection
     nodes = []
@@ -288,6 +304,9 @@ def main():
                                                  config.get('ssh', 'password'))
         if remote_output:
             remote_output = remote_output.split('\n')
+            #DEBUG
+#            print json.dumps(remote_output, sort_keys=True, indent=4)
+#            sys.exit(0)
             nodes.extend(process_isis_output(remote_output, nsap_mapping))
 
     # Create the json output
@@ -304,7 +323,11 @@ def main():
     if args.T:
         nodes.sort()
         for node in nodes:
-            print 'Node: %s' % node.name
+            if node.data:
+                print 'Node: %s' % node.data['name']
+                print 'OSI address: %s' % node.data['osi_address']
+            else:
+                print 'Node: %s' % node.name
             for neighbour in node.neighbours:
                 print '\tNeighbour: %s, metric: %s' % (neighbour.name,
                                                     neighbour.metric)
