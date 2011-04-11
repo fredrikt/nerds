@@ -263,7 +263,7 @@ def get_remote_xml(host, username, password):
     try:
         import pexpect
     except ImportError:
-        print 'Install module pexpect to be able to use remote sources.'
+        print 'Install pexpect to be able to use remote sources.'
         return False
 
     ssh_newkey = 'Are you sure you want to continue connecting'
@@ -278,7 +278,7 @@ def get_remote_xml(host, username, password):
         if i == 1 or i == 2:
             s.sendline(password)
         elif i == 3:
-            print "I either got key problems or connection timeout."
+            print "[%s] I either got key problems or connection timeout." % host
             return False
         s.expect('>', timeout=60)
         # Send JunOS command for displaying the configuration in XML
