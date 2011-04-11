@@ -130,9 +130,6 @@ def lookup_osi(osi_system_id, nsap_mapping):
     full_iso_address = '%s%s%s' % (area_id, osi_system_id, selector_id)
     for item in nsap_mapping:
         if item['osi_address'] == full_iso_address.replace('.',''):
-            #DEBUG
-            #print full_iso_address.replace('.','')
-            #print item
             return item
     return None
 
@@ -145,8 +142,8 @@ def merge_nodes(new_node, node_list):
         if node == new_node:
             for neighbour in new_node.neighbours:
                 if neighbour not in node.neighbours:
-                    node.neighbours.append(neighbour)     
-                    
+                    node.neighbours.append(neighbour)
+
 def get_remote_input(host, username, password):
     '''
     Tries to ssh to the supplied Cisco machine and execute the command
@@ -179,13 +176,13 @@ def get_remote_input(host, username, password):
         s.sendline('terminal length 0') # equal to 'no-more'
         s.expect('>')
         s.sendline ('show isis database detail')
-        s.expect('>', timeout=120) 
+        s.expect('>', timeout=120)
         output = s.before # take everything printed before last expect()
         s.sendline('exit')
     except pexpect.ExceptionPexpect:
         print 'Timed out in %s.' % host
         return False
-    
+
     return output
 
 def process_isis_output(f, nsap_mapping=None):
@@ -226,18 +223,12 @@ def process_isis_output(f, nsap_mapping=None):
                     if nsap_mapping:
                         data = lookup_osi(name, nsap_mapping)
                         if data:
-                            #node.name = data['name']
-                            #DEBUG
-                            #print '1 %s' % node.data
                             node.data.update(data)
-                            #print '2 %s' % node.data
                         data = None
                     if node in nodes:
-                        merge_nodes(node, nodes)                        
+                        merge_nodes(node, nodes)
                     else:
                         nodes.append(node)
-                        #DEBUG
-                        #print node.to_json()
                     node = None
                 # Remove the last dot and everything after that in name
                 name = '.'.join(line_list[0].split('.')[:-1])
@@ -285,13 +276,10 @@ def main():
                 tmp[key_list[i]] = value_list[i]
             nsap_mapping.append(tmp)
             line = normalize_whitespace(m.readline())
-        #DEBUG
-        #print json.dumps(nsap_mapping, sort_keys=True, indent=4)
-        #sys.exit(0)
 
     # Node collection
     nodes = []
-    
+
     # Process local files
     local_sources = config.get('sources', 'local').split()
     for f in local_sources:
@@ -300,13 +288,10 @@ def main():
     # Process remote hosts
     remote_sources = config.get('sources', 'remote').split()
     for host in remote_sources:
-        remote_output = get_remote_input(host, config.get('ssh', 'user'), 
+        remote_output = get_remote_input(host, config.get('ssh', 'user'),
                                                  config.get('ssh', 'password'))
         if remote_output:
             remote_output = remote_output.split('\n')
-            #DEBUG
-#            print json.dumps(remote_output, sort_keys=True, indent=4)
-#            sys.exit(0)
             nodes.extend(process_isis_output(remote_output, nsap_mapping))
 
     # Create the json output
