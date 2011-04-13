@@ -128,9 +128,12 @@ def lookup_osi(osi_system_id, nsap_mapping):
     area_id = '47002300000001000100010001' # Alcatel area id
     selector_id = '1D' # Alcatel selector id
     full_iso_address = '%s%s%s' % (area_id, osi_system_id, selector_id)
+    #print '-- Lookup --' #DEBUG
     for item in nsap_mapping:
         if item['osi_address'] == full_iso_address.replace('.',''):
+            #print '%s is %s' % (osi_system_id, item['name'])#DEBUG
             return item
+    #print 'No match for %s.' % osi_system_id#DEBUG
     return None
 
 def merge_nodes(new_node, node_list):
@@ -201,28 +204,33 @@ def process_isis_output(f, nsap_mapping=None):
         line = normalize_whitespace(line)
         line_list = line.split()
         if line and line_list[0] not in not_interesting_lines:
+            #print 'Line: %s' % line #DEBUG
             if line_list[0] == 'Metric:':
                 metric = line_list[1]
-                name = line_list[3]
+                neighbour_name = line_list[3]
                 if node and metric != '0':
                     # Remove the last dot and everything after that
                     # in name
-                    name = '.'.join(name.split('.')[:-1])
+                    neighbour_name = '.'.join(neighbour_name.split('.')[:-1])
                     if nsap_mapping:
-                        data = lookup_osi(name, nsap_mapping)
+                        #print 'Neighbour %s' % neighbour_name #DEBUG
+                        data = lookup_osi(neighbour_name, nsap_mapping)
                         if data:
                             node.neighbours.append(Neighbour(
                                                 data['name'], metric))
                     else:
-                        node.neighbours.append(Neighbour(name, metric))
+                        node.neighbours.append(Neighbour(neighbour_name, 
+                                                                     metric))
             elif line_list[0] == 'Hostname:':
                 if node:
                     node.name = line_list[1]
             else:
                 if node:
+                    #print 'Node name: %s' % node.name #DEBUG
                     if nsap_mapping:
-                        data = lookup_osi(name, nsap_mapping)
+                        data = lookup_osi(node.name, nsap_mapping)
                         if data:
+                            node.name = data['name']
                             node.data.update(data)
                         data = None
                     if node in nodes:
@@ -231,9 +239,9 @@ def process_isis_output(f, nsap_mapping=None):
                         nodes.append(node)
                     node = None
                 # Remove the last dot and everything after that in name
-                name = '.'.join(line_list[0].split('.')[:-1])
-                if name and not node:
-                    node = Node(name)
+                node_name = '.'.join(line_list[0].split('.')[:-1])
+                if node_name and not node:
+                    node = Node(node_name)
     return nodes
 
 def main():
