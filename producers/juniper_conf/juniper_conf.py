@@ -133,8 +133,9 @@ def get_interfaces(xmldoc):
     interfaces = xmldoc.getElementsByTagName('interfaces')
     listofinterfaces = []
 
+    interface = []
     for i in interfaces:
-        interface = list(i.getElementsByTagName('interface'))
+        interface.extend(list(i.getElementsByTagName('interface')))
 
     for elements in interface:
         tempInterface = Interface()
@@ -163,7 +164,6 @@ def get_interfaces(xmldoc):
 
         # Get all information per interface unit
         units = elements.getElementsByTagName('unit')
-        unitemp = ''
         desctemp = ''
         vlanidtemp = ''
         nametemp = ''
@@ -247,7 +247,8 @@ def get_local_xml(f):
     '''
     try:
         xmldoc = minidom.parse(f)
-    except minidom.ExpatError:
+    except Exception as e:
+        print e
         print 'Malformed XML input from %s.' % f
         return False
 
