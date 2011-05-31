@@ -60,7 +60,7 @@ class Interface:
         self.tunneldict = []
         # Unit dict is a list of dictionaries containing units to
         # interfaces, should be index like {'unit': 'name',
-        # 'desc': 'foo', 'vlanid': 'bar', 'address': 'xyz'}
+        # 'description': 'foo', 'vlanid': 'bar', 'address': 'xyz'}
         self.unitdict = []
 
     def to_json(self):
@@ -154,7 +154,7 @@ def get_interfaces(xmldoc):
         tempInterface.bundle = get_firstchild(elements, 'bundle')
 
         # Get the interface description
-        tempInterface.desc = get_firstchild(elements, 'description')
+        tempInterface.description = get_firstchild(elements, 'description')
 
         # Get tunnel information if any
         source = get_firstchild(elements, 'source')
