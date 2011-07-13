@@ -54,7 +54,6 @@ def read_csv(f, delim=';'):
             tmp[key_list[i].replace(' ','_').lower()] = value_list[i]
         node_list.append(tmp)
         line = normalize_whitespace(f.readline())
-    print node_list
     return node_list
 
 def main():
@@ -67,7 +66,7 @@ def main():
     parser.add_argument('-O', nargs='?',
                         help='Path to output directory.')
     parser.add_argument('-D', nargs='?', default=';',
-                        help='Delimiter used. Default ";".')
+                        help='Delimiter to use use. Default ";".')
     parser.add_argument('-N', action='store_true',
                         help='Don\'t write output to disk (JSON format).')
     args = parser.parse_args()
@@ -126,7 +125,6 @@ def main():
         except IOError as (errno, strerror):
             print 'When trying to open output file.'
             print "I/O error({0}): {1}".format(errno, strerror)
-
     return 0
 
 if __name__ == '__main__':
