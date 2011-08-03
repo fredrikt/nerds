@@ -41,6 +41,7 @@ def normalize_whitespace(text):
     '''
     Remove redundant whitespace from a string.
     '''
+    text = text.replace('"', '').replace("'", '')
     return ' '.join(text.split())
     
 def read_csv(f, delim=';'):
@@ -51,7 +52,9 @@ def read_csv(f, delim=';'):
         value_list = line.split(';')
         tmp = {}
         for i in range(0, len(key_list)):
-            tmp[key_list[i].replace(' ','_').lower()] = value_list[i]
+            key = normalize_whitespace(key_list[i].replace(' ','_').lower())
+            value = normalize_whitespace(value_list[i])
+            tmp[key] = value
         node_list.append(tmp)
         line = normalize_whitespace(f.readline())
     return node_list
@@ -61,7 +64,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('files', nargs='+', type=str,
                         help='Files to process.')
-    parser.add_argument('-M', nargs='?',
+    parser.add_argument('-M', default='None', nargs='?',
             help='Node meta type. [physical, logical, relation or location]')
     parser.add_argument('-O', nargs='?',
                         help='Path to output directory.')
