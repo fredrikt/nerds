@@ -44,7 +44,7 @@ def normalize_whitespace(text):
     text = text.replace('"', '').replace("'", '')
     return ' '.join(text.split())
     
-def read_csv(f, delim=';'):
+def read_csv(f, delim=';', empty_keys=True):
     node_list = []
     key_list = normalize_whitespace(f.readline()).split(delim)
     line = normalize_whitespace(f.readline())
@@ -54,7 +54,8 @@ def read_csv(f, delim=';'):
         for i in range(0, len(key_list)):
             key = normalize_whitespace(key_list[i].replace(' ','_').lower())
             value = normalize_whitespace(value_list[i])
-            tmp[key] = value
+            if value or empty_keys:
+                tmp[key] = value
         node_list.append(tmp)
         line = normalize_whitespace(f.readline())
     return node_list
@@ -70,6 +71,8 @@ def main():
                         help='Path to output directory.')
     parser.add_argument('-D', nargs='?', default=';',
                         help='Delimiter to use use. Default ";".')
+    parser.add_argument('-NE', action='store_false', default=True,
+                        help='No empty keys in the output.')
     parser.add_argument('-N', action='store_true',
                         help='Don\'t write output to disk (JSON format).')
     args = parser.parse_args()
@@ -79,7 +82,7 @@ def main():
         nodes = []
         try:
             for f in args.files:
-                nodes.extend(read_csv(open(f), args.D))
+                nodes.extend(read_csv(open(f), args.D, args.NE))
         except IOError as (errno, strerror):
             print 'When trying to open csv file.'
             print "I/O error({0}): {1}".format(errno, strerror)
