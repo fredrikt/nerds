@@ -289,8 +289,9 @@ def get_remote_xml(host, username, password):
                                                 # blob
         xml = s.before # take everything printed before last expect()
         s.sendline('exit')
-    except pexpect.ExceptionPexpect:
-        print 'Timed out in %s.' % host
+    except pexpect.ExceptionPexpect as e:
+        print 'Exception in %s.' % host
+        print e
         return False
 
     xml += '</rpc-reply>' # Add the end element as pexpect steals it
