@@ -302,11 +302,44 @@ def get_remote_xml(host, username, password):
     except minidom.ExpatError:
         print 'Malformed XML input from %s.' % host
         return False
-
     return xmldoc
 
-def main():
+def write_output(xmldoc, not_to_disk=False, out_dir='./json/'):
+    # Parse the xml documents to create Router objects
+    router = parse_router(xmldoc)
+    # Call .tojson() for all Router objects and merge that with the
+    # nerds template. Store the json in the dictionary out with the key
+    # name.
+    out = {}
+    template = {'host':
+                    {'name': router.name,
+                     'version': 1,
+                     'juniper_conf': {}
+                    }
+                }
+    template['host']['juniper_conf'] = router.to_json()
+    out = json.dumps(template, indent=4)
+    # Depending on which arguments the user provided print to file or
+    # to stdout.
+    if not_to_disk:
+        print out
+    else:
+        # Pad with / if user provides a broken path
+        if out_dir[-1] != '/':
+            out_dir += '/'
+        try:
+            try:
+                f = open('%s%s.json' % (out_dir, router.name), 'w')
+            except IOError:
+                # The directory to write in must exist
+                os.mkdir(out_dir)
+                f = open('%s%s.json' % (out_dir, router.name), 'w')
+            f.write(out)
+            f.close()
+        except IOError as (errno, strerror):
+            print "I/O error({0}): {1}".format(errno, strerror)
 
+def main():
     # User friendly usage output
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', nargs='?',
@@ -316,74 +349,31 @@ def main():
     parser.add_argument('-N', action='store_true',
         help='Don\'t write output to disk.')
     args = parser.parse_args()
-
     # Load the configuration file
     if args.C == None:
         print 'Please provide a configuration file with -C.'
         sys.exit(1)
     else:
         config = init_config(args.C)
-
-    # List to collect configuration in XML document format for parsing
-    xmldocs = []
-
+    not_to_disk = False
+    out_dir = './json/'
+    if args.N:
+        not_to_disk = True
+    if args.O:
+        out_dir = args.O
     # Process local files
     local_sources = config.get('sources', 'local').split()
     for f in local_sources:
         xmldoc = get_local_xml(f)
         if xmldoc:
-            xmldocs.append(xmldoc)
-
+            write_output(xmldoc, not_to_disk, out_dir)
     # Process remote hosts
     remote_sources = config.get('sources', 'remote').split()
     for host in remote_sources:
         xmldoc = get_remote_xml(host, config.get('ssh', 'user'),
             config.get('ssh', 'password'))
         if xmldoc:
-            xmldocs.append(xmldoc)
-
-    # Parse the xml documents to create Router objects
-    parsed_conf_xml = []
-    for doc in xmldocs:
-        parsed_conf_xml.append(parse_router(doc))
-
-    # Call .tojson() for all Router objects and merge that with the
-    # nerds template. Store the json in the dictionary out with the key
-    # name.
-    out = {}
-    for c in parsed_conf_xml:
-        template = {'host':{'name': c.name, 'version': 1,
-            'juniper_conf': {}}}
-        template['host']['juniper_conf'] = c.to_json()
-        out[c.name] = json.dumps(template, indent=4)
-
-    # Output directory should be ./json/ if nothing else is specified
-    out_dir = './json/'
-
-    # Depending on which arguments the user provided print to file or
-    # to stdout.
-    if args.N is True:
-        for key in out:
-            print out[key]
-    else:
-        if args.O:
-            out_dir = args.O
-        # Pad with / if user provides a broken path
-        if out_dir[-1] != '/':
-            out_dir += '/'
-        for key in out:
-            try:
-                try:
-                    f = open('%s%s.json' % (out_dir, key), 'w')
-                except IOError:
-                    # The directory to write in must exist
-                    os.mkdir(out_dir)
-                    f = open('%s%s.json' % (out_dir, key), 'w')
-                f.write(out[key])
-                f.close()
-            except IOError as (errno, strerror):
-                print "I/O error({0}): {1}".format(errno, strerror)
-
+            write_output(xmldoc, not_to_disk, out_dir)
     return 0
 
 if __name__ == '__main__':
