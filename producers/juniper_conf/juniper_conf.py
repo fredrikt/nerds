@@ -219,6 +219,11 @@ def parse_router(xmldoc):
     '''
     Takes a JunOS conf in XML format and returns a Router object.
     '''
+    # Until we decide how we will handle logical-systems we remove them from
+    # the configuration.
+    logical_systems = xmldoc.getElementsByTagName('logical-systems')
+    for item in logical_systems:
+        item.parentNode.removeChild(item).unlink()
     router = Router()
     router.name = get_hostname(xmldoc)
     router.interfaces = get_interfaces(xmldoc)
@@ -249,7 +254,6 @@ def get_local_xml(f):
         print e
         print 'Malformed XML input from %s.' % f
         return False
-
     return xmldoc
 
 def get_remote_xml(host, username, password):
@@ -264,10 +268,8 @@ def get_remote_xml(host, username, password):
     except ImportError:
         print 'Install pexpect to be able to use remote sources.'
         return False
-
     ssh_newkey = 'Are you sure you want to continue connecting'
     login_choices = [ssh_newkey, 'Password:', 'password:', pexpect.EOF]
-
     try:
         s = pexpect.spawn('ssh %s@%s' % (username,host))
         i = s.expect(login_choices)
