@@ -103,17 +103,15 @@ def get_hostname(xmldoc):
     '''
     re = xmldoc.getElementsByTagName('host-name')
     domain = xmldoc.getElementsByTagName('domain-name')
-
-    try:
-        hostname = '%s.%s' % (re[0].firstChild.data,
-                            domain[0].firstChild.data)
-    except AttributeError:
-        print 'No host-name element in config file, check the config.'
+    if re:
+        hostname = re[0].firstChild.data
+    else:
+        print 'Could not find host-name in the Juniper configuration.'
         sys.exit(1)
-
+    if domain:
+        hostname += '.%s' % domain[0].firstChild.data
     if 're0' in hostname or 're1' in hostname:
         hostname = hostname.replace('-re0','').replace('-re1','')
-
     return hostname
 
 def get_interfaces(xmldoc):
