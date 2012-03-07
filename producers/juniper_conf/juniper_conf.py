@@ -103,17 +103,15 @@ def get_hostname(xmldoc):
     '''
     re = xmldoc.getElementsByTagName('host-name')
     domain = xmldoc.getElementsByTagName('domain-name')
-
-    try:
-        hostname = '%s.%s' % (re[0].firstChild.data,
-                            domain[0].firstChild.data)
-    except AttributeError:
-        print 'No host-name element in config file, check the config.'
+    if re:
+        hostname = re[0].firstChild.data
+    else:
+        print 'Could not find host-name in the Juniper configuration.'
         sys.exit(1)
-
+    if domain:
+        hostname += '.%s' % domain[0].firstChild.data
     if 're0' in hostname or 're1' in hostname:
         hostname = hostname.replace('-re0','').replace('-re1','')
-
     return hostname
 
 def get_interfaces(xmldoc):
@@ -221,6 +219,11 @@ def parse_router(xmldoc):
     '''
     Takes a JunOS conf in XML format and returns a Router object.
     '''
+    # Until we decide how we will handle logical-systems we remove them from
+    # the configuration.
+    logical_systems = xmldoc.getElementsByTagName('logical-systems')
+    for item in logical_systems:
+        item.parentNode.removeChild(item).unlink()
     router = Router()
     router.name = get_hostname(xmldoc)
     router.interfaces = get_interfaces(xmldoc)
@@ -251,7 +254,6 @@ def get_local_xml(f):
         print e
         print 'Malformed XML input from %s.' % f
         return False
-
     return xmldoc
 
 def get_remote_xml(host, username, password):
@@ -266,10 +268,8 @@ def get_remote_xml(host, username, password):
     except ImportError:
         print 'Install pexpect to be able to use remote sources.'
         return False
-
     ssh_newkey = 'Are you sure you want to continue connecting'
     login_choices = [ssh_newkey, 'Password:', 'password:', pexpect.EOF]
-
     try:
         s = pexpect.spawn('ssh %s@%s' % (username,host))
         i = s.expect(login_choices)
