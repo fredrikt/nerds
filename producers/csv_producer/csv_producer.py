@@ -49,7 +49,7 @@ def read_csv(f, delim=';', empty_keys=True):
     key_list = normalize_whitespace(f.readline()).split(delim)
     line = normalize_whitespace(f.readline())
     while line:
-        value_list = line.split(';')
+        value_list = line.split(delim)
         tmp = {}
         for i in range(0, len(key_list)):
             key = normalize_whitespace(key_list[i].replace(' ','_').lower())
