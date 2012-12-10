@@ -25,13 +25,11 @@ import json
 import ConfigParser
 import argparse
 
-'''
-JUNOS configuration producer written for the NERDS project 
-(http://github.com/fredrikt/nerds/).
-
-Depends on pexpect for remote config gathering.
-If you have Python <2.7 you need to install argparse manually.
-'''
+#JUNOS configuration producer written for the NERDS project
+#(http://github.com/fredrikt/nerds/).
+#
+#Depends on pexpect for remote config gathering.
+#If you have Python <2.7 you need to install argparse manually.
 
 class Router:
     def __init__(self):
@@ -87,10 +85,10 @@ class BgpPeering:
 
 
 def get_firstchild(element, tag):
-    '''
+    """
     Takes xml element and a name of a tag.
     Returns the data from a tag when looping over a parent.
-    '''
+    """
     try:
         data = element.getElementsByTagName(tag).item(0).firstChild.data
     except AttributeError:
@@ -98,9 +96,9 @@ def get_firstchild(element, tag):
     return data
 
 def get_hostname(xmldoc):
-    '''
+    """
     Finds and returns the hostname from a JunOS config.
-    '''
+    """
     re = xmldoc.getElementsByTagName('host-name')
     domain = xmldoc.getElementsByTagName('domain-name')
     if re:
@@ -115,7 +113,7 @@ def get_hostname(xmldoc):
     return hostname
 
 def get_interfaces(xmldoc):
-    '''
+    """
     Returns a list of Interface objects made out from all interfaces in
     the JunOS config.
 
@@ -126,9 +124,9 @@ def get_interfaces(xmldoc):
     (Python) objects that represent the (XML) attributes also have
     (Python) attributes, which are used to access various parts of the
     (XML) attribute that the object represents." ARGH ;)
-    '''
+    """
 
-    interfaces = xmldoc.getElementsByTagName('interfaces')
+    interfaces = xmldoc.getElementsByTagName('interfaces') # This will get _all_ interfaces tags...
     listofinterfaces = []
 
     interface = []
@@ -184,13 +182,15 @@ def get_interfaces(xmldoc):
     return listofinterfaces
 
 def get_bgp_peerings(xmldoc):
-    '''
+    """
     Returns a list of all BGP peerings in the JunOS configuration.
-    '''
+    """
     bgp = xmldoc.getElementsByTagName('bgp')
-    groups = bgp[0].getElementsByTagName('group')
     list_of_peerings = []
-
+    try:
+        groups = bgp[0].getElementsByTagName('group')
+    except IndexError:
+        return list_of_peerings
     for element in groups:
         group_name = get_firstchild(element, 'name')
         group_type = get_firstchild(element, 'type')
@@ -211,14 +211,13 @@ def get_bgp_peerings(xmldoc):
             peering.group = group_name
             peering.as_number = get_firstchild(neighbor,'peer-as')
             list_of_peerings.append(peering)
-
     return list_of_peerings
 
 
 def parse_router(xmldoc):
-    '''
+    """
     Takes a JunOS conf in XML format and returns a Router object.
-    '''
+    """
     # Until we decide how we will handle logical-systems we remove them from
     # the configuration.
     logical_systems = xmldoc.getElementsByTagName('logical-systems')
@@ -232,9 +231,9 @@ def parse_router(xmldoc):
     return router
 
 def init_config(path):
-    '''
+    """
     Initializes the configuration file located in the path provided.
-    '''
+    """
     try:
        config = ConfigParser.SafeConfigParser()
        config.read(path)
@@ -243,11 +242,11 @@ def init_config(path):
         print "I/O error({0}): {1}".format(errno, strerror)
 
 def get_local_xml(f):
-    '''
+    """
     Parses the provided file to an XML document and returns it.
 
     Returns False if the XML is malformed.
-    '''
+    """
     try:
         xmldoc = minidom.parse(f)
     except Exception as e:
@@ -257,12 +256,12 @@ def get_local_xml(f):
     return xmldoc
 
 def get_remote_xml(host, username, password):
-    '''
+    """
     Tries to ssh to the supplied JunOS machine and execute the command
     to show current configuration i XML format.
 
     Returns False if the configuration could not be retrived.
-    '''
+    """
     try:
         import pexpect
     except ImportError:
