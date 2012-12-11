@@ -380,11 +380,12 @@ def main():
         show_command = 'show configuration | display xml | no-more'
         configuration = get_remote_xml(host, config.get('ssh', 'user'),
             config.get('ssh', 'password'), show_command)
-        show_command = 'show interfaces | display xml |no-more'
-        interfaces = get_remote_xml(host, config.get('ssh', 'user'),
-            config.get('ssh', 'password'), show_command)
-        physical_interfaces = get_physical_interfaces(interfaces)
         if configuration:
+            show_command = 'show interfaces | display xml |no-more'
+            interfaces = get_remote_xml(host, config.get('ssh', 'user'),
+                config.get('ssh', 'password'), show_command)
+	    if interfaces:
+                physical_interfaces = get_physical_interfaces(interfaces)
             # Parse the xml document to create a Router object
             router = parse_router(configuration, physical_interfaces)
             # Write JSON
