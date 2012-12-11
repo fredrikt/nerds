@@ -149,6 +149,8 @@ def get_interfaces(xmldoc, physical_interfaces=None):
         if physical_interfaces and not tempInterface.name in physical_interfaces:
             logger.warn('Interface %s is configured but not found in %s.' % (tempInterface.name, get_hostname(xmldoc)))
             continue
+        elif physical_interfaces:
+            physical_interfaces.remove(tempInterface.name)
         # Is the interface vlan-tagging?
         vlantag = interface.getElementsByTagName('vlan-tagging').item(0)
         if vlantag:
@@ -182,6 +184,11 @@ def get_interfaces(xmldoc, physical_interfaces=None):
                 'address': nametemp})
         # Add interface to the collection of interfaces
         interfaces.append(tempInterface)
+    if physical_interfaces: # Physical interfaces that are not configured
+        for interface in physical_interfaces:
+            tempInterface = Interface()
+            tempInterface.name = interface
+            interfaces.append(tempInterface)
     return interfaces
 
 def get_bgp_peerings(xmldoc):
