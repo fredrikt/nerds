@@ -24,6 +24,15 @@ import sys
 import json
 import ConfigParser
 import argparse
+import logging
+
+logger = logging.getLogger('juniper_conf')
+logger.setLevel(logging.INFO)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 #JUNOS configuration producer written for the NERDS project
 #(http://github.com/fredrikt/nerds/).
@@ -84,7 +93,7 @@ class BgpPeering:
         return j
 
 
-def get_firstchild(element, tag):
+def get_firstchild_data(element, tag):
     """
     Takes xml element and a name of a tag.
     Returns the data from a tag when looping over a parent.
@@ -104,7 +113,7 @@ def get_hostname(xmldoc):
     if re:
         hostname = re[0].firstChild.data
     else:
-        print 'Could not find host-name in the Juniper configuration.'
+        logger.error('Could not find host-name in the Juniper configuration.')
         sys.exit(1)
     if domain:
         hostname += '.%s' % domain[0].firstChild.data
@@ -112,7 +121,7 @@ def get_hostname(xmldoc):
         hostname = hostname.replace('-re0','').replace('-re1','')
     return hostname
 
-def get_interfaces(xmldoc):
+def get_interfaces(xmldoc, physical_interfaces=None):
     """
     Returns a list of Interface objects made out from all interfaces in
     the JunOS config.
@@ -125,61 +134,55 @@ def get_interfaces(xmldoc):
     (Python) attributes, which are used to access various parts of the
     (XML) attribute that the object represents." ARGH ;)
     """
-
-    interfaces = xmldoc.getElementsByTagName('interfaces') # This will get _all_ interfaces tags...
-    listofinterfaces = []
-
-    interface = []
-    for i in interfaces:
-        interface.extend(list(i.getElementsByTagName('interface')))
-
-    for elements in interface:
+    interfaces_elements = xmldoc.getElementsByTagName('interfaces') # This will get _all_ interfaces elements...
+    interface_elements = []
+    for i in interfaces_elements:
+        # We just want the interfaces element that is directly under configuration
+        if i.parentNode.tagName == 'configuration':
+            interface_elements.extend(list(i.getElementsByTagName('interface')))
+    interfaces = []
+    for interface in interface_elements:
         tempInterface = Interface()
-
         # Interface name, ge-0/1/0 or similar
-        tempInterface.name = get_firstchild(elements, 'name')
-
+        tempInterface.name = get_firstchild_data(interface, 'name')
+        # If we have a list of physical interfaces in the router match against it
+        if physical_interfaces and not tempInterface.name in physical_interfaces:
+            logger.warn('Interface %s is configured but not found in %s.' % (tempInterface.name, get_hostname(xmldoc)))
+            continue
         # Is the interface vlan-tagging?
-        vlantag = elements.getElementsByTagName('vlan-tagging').item(0)
-        if vlantag != None:
+        vlantag = interface.getElementsByTagName('vlan-tagging').item(0)
+        if vlantag:
             tempInterface.vlantagging = True
         else:
             tempInterface.vlantagging = False
-
         # Is it a bundled interface?
-        tempInterface.bundle = get_firstchild(elements, 'bundle')
-
+        tempInterface.bundle = get_firstchild_data(interface, 'bundle')
         # Get the interface description
-        tempInterface.description = get_firstchild(elements, 'description')
-
+        tempInterface.description = get_firstchild_data(interface, 'description')
         # Get tunnel information if any
-        source = get_firstchild(elements, 'source')
-        destination = get_firstchild(elements, 'destination')
+        source = get_firstchild_data(interface, 'source')
+        destination = get_firstchild_data(interface, 'destination')
         tempInterface.tunneldict.append({'source' : source,
             'destination': destination})
-
         # Get all information per interface unit
-        units = elements.getElementsByTagName('unit')
+        units = interface.getElementsByTagName('unit')
         desctemp = ''
         vlanidtemp = ''
         nametemp = ''
         for unit in units:
-            unittemp = get_firstchild(unit, 'name')
-            desctemp = get_firstchild(unit, 'description')
-            vlanidtemp = get_firstchild(unit, 'vlan-id')
+            unittemp = get_firstchild_data(unit, 'name')
+            desctemp = get_firstchild_data(unit, 'description')
+            vlanidtemp = get_firstchild_data(unit, 'vlan-id')
             addresses = unit.getElementsByTagName('address')
             nametemp = []
             for address in addresses:
-                nametemp.append(get_firstchild(address, 'name'))
-
+                nametemp.append(get_firstchild_data(address, 'name'))
             tempInterface.unitdict.append({'unit': unittemp,
                 'description': desctemp, 'vlanid': vlanidtemp,
                 'address': nametemp})
-
         # Add interface to the collection of interfaces
-        listofinterfaces.append(tempInterface)
-
-    return listofinterfaces
+        interfaces.append(tempInterface)
+    return interfaces
 
 def get_bgp_peerings(xmldoc):
     """
@@ -192,29 +195,24 @@ def get_bgp_peerings(xmldoc):
     except IndexError:
         return list_of_peerings
     for element in groups:
-        group_name = get_firstchild(element, 'name')
-        group_type = get_firstchild(element, 'type')
-        # Seems like only internal BGP peerings have local-address
-        # set. Need to find a good way to get it for external
-        # peerings as well. Erik talked about matching sub nets.
-        local_address = get_firstchild(element, 'local-address')
-
+        group_name = get_firstchild_data(element, 'name')
+        group_type = get_firstchild_data(element, 'type')
+        local_address = get_firstchild_data(element, 'local-address')
         neighbors = element.getElementsByTagName('neighbor')
         for neighbor in neighbors:
             #if not neighbor.hasAttribute('inactive')
             peering = BgpPeering()
             peering.type = group_type
-            peering.remote_address = get_firstchild(neighbor, 'name')
-            peering.description = get_firstchild(neighbor,
+            peering.remote_address = get_firstchild_data(neighbor, 'name')
+            peering.description = get_firstchild_data(neighbor,
                 'description')
             peering.local_address = local_address
             peering.group = group_name
-            peering.as_number = get_firstchild(neighbor,'peer-as')
+            peering.as_number = get_firstchild_data(neighbor,'peer-as')
             list_of_peerings.append(peering)
     return list_of_peerings
 
-
-def parse_router(xmldoc):
+def parse_router(xmldoc, physical_interfaces=None):
     """
     Takes a JunOS conf in XML format and returns a Router object.
     """
@@ -225,10 +223,20 @@ def parse_router(xmldoc):
         item.parentNode.removeChild(item).unlink()
     router = Router()
     router.name = get_hostname(xmldoc)
-    router.interfaces = get_interfaces(xmldoc)
+    router.interfaces = get_interfaces(xmldoc, physical_interfaces)
     router.bgp_peerings = get_bgp_peerings(xmldoc)
-
     return router
+
+def get_physical_interfaces(xmldoc):
+    """
+    Takes the output of "show interfaces" and creates a list of interface names that
+    are physically in the router.
+    """
+    physical_interfaces_elements = xmldoc.getElementsByTagName('physical-interface')
+    physical_interface_names = []
+    for i in physical_interfaces_elements:
+        physical_interface_names.append(get_firstchild_data(i, 'name'))
+    return physical_interface_names
 
 def init_config(path):
     """
@@ -239,7 +247,7 @@ def init_config(path):
        config.read(path)
        return config
     except IOError as (errno, strerror):
-        print "I/O error({0}): {1}".format(errno, strerror)
+        logger.error("I/O error({0}): {1}".format(errno, strerror))
 
 def get_local_xml(f):
     """
@@ -250,22 +258,22 @@ def get_local_xml(f):
     try:
         xmldoc = minidom.parse(f)
     except Exception as e:
-        print e
-        print 'Malformed XML input from %s.' % f
+        logger.error(str(e))
+        logger.error('Malformed XML input from %s.' % f)
         return False
     return xmldoc
 
-def get_remote_xml(host, username, password):
+def get_remote_xml(host, username, password, show_command):
     """
     Tries to ssh to the supplied JunOS machine and execute the command
     to show current configuration i XML format.
 
-    Returns False if the configuration could not be retrived.
+    Returns False if the configuration could not be retrieved.
     """
     try:
         import pexpect
     except ImportError:
-        print 'Install pexpect to be able to use remote sources.'
+        logger.error('Install pexpect to be able to use remote sources.')
         return False
     ssh_newkey = 'Are you sure you want to continue connecting'
     login_choices = [ssh_newkey, 'Password:', 'password:', pexpect.EOF]
@@ -278,21 +286,20 @@ def get_remote_xml(host, username, password):
         if i == 1 or i == 2:
             s.sendline(password)
         elif i == 3:
-            print "[%s] I either got key problems or connection timeout." % host
+            logger.error("[%s] I either got key problems or connection timeout." % host)
             return False
         s.expect('>', timeout=60)
         # Send JunOS command for displaying the configuration in XML
         # format.
-        s.sendline ('show configuration | display xml | no-more')
+        s.sendline(show_command)
         s.expect('</rpc-reply>', timeout=120)   # expect end of the XML
                                                 # blob
         xml = s.before # take everything printed before last expect()
         s.sendline('exit')
     except pexpect.ExceptionPexpect as e:
-        print 'Exception in %s.' % host
-        print e
+        logger.error('Exception in %s.' % host)
+        logger.error(str(e))
         return False
-
     xml += '</rpc-reply>' # Add the end element as pexpect steals it
     # Remove the first line in the output which is the command sent
     # to JunOS.
@@ -300,17 +307,15 @@ def get_remote_xml(host, username, password):
     try:
         xmldoc = minidom.parseString(xml)
     except minidom.ExpatError:
-        print 'Malformed XML input from %s.' % host
+        logger.error('Malformed XML input from %s.' % host)
         return False
     return xmldoc
 
-def write_output(xmldoc, not_to_disk=False, out_dir='./json/'):
-    # Parse the xml documents to create Router objects
-    router = parse_router(xmldoc)
+def write_output(router, not_to_disk=False, out_dir='./json/'):
+
     # Call .tojson() for all Router objects and merge that with the
     # nerds template. Store the json in the dictionary out with the key
     # name.
-    out = {}
     template = {'host':
                     {'name': router.name,
                      'version': 1,
@@ -337,7 +342,7 @@ def write_output(xmldoc, not_to_disk=False, out_dir='./json/'):
             f.write(out)
             f.close()
         except IOError as (errno, strerror):
-            print "I/O error({0}): {1}".format(errno, strerror)
+            logger.error("I/O error({0}): {1}".format(errno, strerror))
 
 def main():
     # User friendly usage output
@@ -350,8 +355,8 @@ def main():
         help='Don\'t write output to disk.')
     args = parser.parse_args()
     # Load the configuration file
-    if args.C == None:
-        print 'Please provide a configuration file with -C.'
+    if not args.C:
+        logger.error('Please provide a configuration file with -C.')
         sys.exit(1)
     else:
         config = init_config(args.C)
@@ -366,14 +371,24 @@ def main():
     for f in local_sources:
         xmldoc = get_local_xml(f)
         if xmldoc:
-            write_output(xmldoc, not_to_disk, out_dir)
+            # Parse the xml document to create a Router object
+            router = parse_router(xmldoc)
+            write_output(router, not_to_disk, out_dir)
     # Process remote hosts
     remote_sources = config.get('sources', 'remote').split()
     for host in remote_sources:
-        xmldoc = get_remote_xml(host, config.get('ssh', 'user'),
-            config.get('ssh', 'password'))
-        if xmldoc:
-            write_output(xmldoc, not_to_disk, out_dir)
+        show_command = 'show configuration | display xml | no-more'
+        configuration = get_remote_xml(host, config.get('ssh', 'user'),
+            config.get('ssh', 'password'), show_command)
+        show_command = 'show interfaces | display xml |no-more'
+        interfaces = get_remote_xml(host, config.get('ssh', 'user'),
+            config.get('ssh', 'password'), show_command)
+        physical_interfaces = get_physical_interfaces(interfaces)
+        if configuration:
+            # Parse the xml document to create a Router object
+            router = parse_router(configuration, physical_interfaces)
+            # Write JSON
+            write_output(router, not_to_disk, out_dir)
     return 0
 
 if __name__ == '__main__':
