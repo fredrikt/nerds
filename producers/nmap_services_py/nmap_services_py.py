@@ -5,7 +5,7 @@ import os
 import json
 import nmap
 
-# nmap_services.py
+# nmap_services_py.py
 #
 # Rewrite of nmap_services producer in Python for the NERDS project
 # (http://github.com/fredrikt/nerds/).
@@ -55,6 +55,9 @@ def nerds_format(host, data):
     nerds_format['host']['nmap_services_py'] = nmap_services_py
     return nerds_format
 
+def merge_host(name):
+    print 'Should have merged %s.' % name
+
 def output(d, out_dir, no_write=False):
     out = json.dumps(d, sort_keys=True, indent=4)
     if no_write:
@@ -65,6 +68,8 @@ def output(d, out_dir, no_write=False):
         try:
             try:
                 #TODO: check if file exists, if so combine results
+                if os.path.exists('%s%s' % (out_dir, d['host']['name'])):
+                    merge_host(d['host']['name'])
                 f = open('%s%s' % (out_dir, d['host']['name']), 'w')
             except IOError:
                 os.mkdir(out_dir) # The directory to write in must exist
