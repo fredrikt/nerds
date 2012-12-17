@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 import argparse
 import os
+import time
 import json
 import nmap
 
@@ -10,50 +11,58 @@ import nmap
 # Rewrite of nmap_services producer in Python for the NERDS project
 # (http://github.com/fredrikt/nerds/).
 #
-# If you have Python <2.7 you need to install argparse manually.
+# Requires Python 2.7.
 
 def scan(target, nmap_arguments, output_arguments):
     def callback_result(host, scan_result):
         d = nerds_format(host, scan_result)
-        output(d, output_arguments['out_dir'], output_arguments['no_write'])
+        if d:
+
+            output(d, output_arguments['out_dir'], output_arguments['no_write'])
 
     nma = nmap.PortScannerAsync()
     nma.scan(hosts=target, arguments=nmap_arguments, callback=callback_result)
     return nma
 
 def nerds_format(host, data):
-    host_data = data['scan'][host]
-    nerds_format = {
-        'host':{
-            'name': host_data['hostname'],
-            'version': 1,
-            'nmap_services_py': None
+    """
+    Transform the nmap output to the NERDS format.
+    """
+    if data['scan']:
+        host_data = data['scan'][host]
+        nerds_format = {
+            'host':{
+                'name': host_data['hostname'],
+                'version': 1,
+                'nmap_services_py': None
+            }
         }
-    }
-    nmap_services_py = {
-        'addresses': [host],
-        'hostnames':[host_data['hostname']],
-        'os': {},
-        'services':{
-            host: {}
+        nmap_services_py = {
+            'addresses': [host],
+            'hostnames':[host_data['hostname']],
+            'os': {},
+            'services':{
+                host: {}
+            }
         }
-    }
-    if host_data.has_key('uptime'):
-        nmap_services_py['uptime'] = host_data.uptime()
-    if host_data.has_key('tcp'):
-        nmap_services_py['services'][host]['tcp'] = host_data['tcp']
-    if host_data.has_key('udp'):
-        nmap_services_py['services'][host]['udp'] = host_data['udp']
-    if host_data.has_key('ip'):
-        nmap_services_py['services'][host]['ip'] = host_data['ip']
-    if host_data.has_key('sctp'):
-        nmap_services_py['services'][host]['sctp'] = host_data['sctp']
-    if host_data.has_key('osclass'):
-        nmap_services_py['os']['class'] = host_data['osclass'][0]
-    if host_data.has_key('osmatch'):
-        nmap_services_py['os']['match'] = host_data['osmatch'][0]
-    nerds_format['host']['nmap_services_py'] = nmap_services_py
-    return nerds_format
+        if host_data.has_key('uptime'):
+            nmap_services_py['uptime'] = host_data.uptime()
+        if host_data.has_key('tcp'):
+            nmap_services_py['services'][host]['tcp'] = host_data['tcp']
+        if host_data.has_key('udp'):
+            nmap_services_py['services'][host]['udp'] = host_data['udp']
+        if host_data.has_key('ip'):
+            nmap_services_py['services'][host]['ip'] = host_data['ip']
+        if host_data.has_key('sctp'):
+            nmap_services_py['services'][host]['sctp'] = host_data['sctp']
+        if host_data.has_key('osclass'):
+            nmap_services_py['os']['class'] = host_data['osclass'][0]
+        if host_data.has_key('osmatch'):
+            nmap_services_py['os']['match'] = host_data['osmatch'][0]
+        nerds_format['host']['nmap_services_py'] = nmap_services_py
+        return nerds_format
+    else:
+        return None
 
 def merge_host(name):
     print 'Should have merged %s.' % name
@@ -107,11 +116,14 @@ def main():
         scanners.append(scan(args.target, nmap_arguments, output_arguments))
     elif args.list:
         for target in args.list:
-            scanners.append(scan(target, nmap_arguments, output_arguments))
+            target = target.strip()
+            if target:
+                scanners.append(scan(target, nmap_arguments, output_arguments))
     # Wait for the scanners to finish
     while scanners:
         if args.verbose:
             print("Scanning >>>")
+            time.sleep(1)
         for scanner in scanners:
             if not scanner.still_scanning():
                 scanners.remove(scanner)
