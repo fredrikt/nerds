@@ -43,11 +43,13 @@ logger.addHandler(ch)
 class Router:
     def __init__(self):
         self.name = ''
+        self.version = ''
         self.interfaces = []
         self.bgp_peerings = []
 
     def to_json(self):
-        j = {'name':self.name}
+        j = {'name':self.name,
+             'version': self.version}
         interfaces = []
         for interface in self.interfaces:
             interfaces.append(interface.to_json())
@@ -120,6 +122,13 @@ def get_hostname(xmldoc):
     if 're0' in hostname or 're1' in hostname:
         hostname = hostname.replace('-re0','').replace('-re1','')
     return hostname
+
+def get_version(xmldoc):
+    """
+    Finds and returns the JUNOS version.
+    """
+    version = xmldoc.getElementsByTagName('version')[0].firstChild.data
+    return version
 
 def get_interfaces(xmldoc, physical_interfaces=None):
     """
@@ -230,6 +239,7 @@ def parse_router(xmldoc, physical_interfaces=None):
         item.parentNode.removeChild(item).unlink()
     router = Router()
     router.name = get_hostname(xmldoc)
+    router.version = get_version(xmldoc)
     router.interfaces = get_interfaces(xmldoc, physical_interfaces)
     router.bgp_peerings = get_bgp_peerings(xmldoc)
     return router
