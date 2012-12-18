@@ -5,6 +5,15 @@ import os
 import time
 import json
 import nmap
+import logging
+
+logger = logging.getLogger('nmap_services_py')
+logger.setLevel(logging.INFO)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 # nmap_services_py.py
 #
@@ -13,8 +22,12 @@ import nmap
 #
 # Requires Python 2.7.
 
+VERBOSE = False
+
 def scan(target, nmap_arguments, output_arguments):
     def callback_result(host, scan_result):
+        if VERBOSE:
+            logger.info('Finished scanning %s.' % host)
         d = nerds_format(host, scan_result)
         if d:
 
@@ -45,8 +58,14 @@ def nerds_format(host, data):
                 host: {}
             }
         }
+        # name
+        if not nerds_format['host']['name']:
+            logger.info('Host %s not in DNS.' % host)
+            nerds_format['host']['name'] = host
+        # uptime
         if host_data.has_key('uptime'):
             nmap_services_py['uptime'] = host_data.uptime()
+        # services
         if host_data.has_key('tcp'):
             nmap_services_py['services'][host]['tcp'] = host_data['tcp']
         if host_data.has_key('udp'):
@@ -55,17 +74,33 @@ def nerds_format(host, data):
             nmap_services_py['services'][host]['ip'] = host_data['ip']
         if host_data.has_key('sctp'):
             nmap_services_py['services'][host]['sctp'] = host_data['sctp']
+        # os
         if host_data.has_key('osclass'):
             nmap_services_py['os']['class'] = host_data['osclass'][0]
         if host_data.has_key('osmatch'):
             nmap_services_py['os']['match'] = host_data['osmatch'][0]
         nerds_format['host']['nmap_services_py'] = nmap_services_py
+        if VERBOSE:
+            logger.info('Finished processing %s (%s).' % (nerds_format['host']['name'], host))
         return nerds_format
     else:
         return None
 
-def merge_host(name):
-    print 'Should have merged %s.' % name
+def merge_nmap_services(d1, d2):
+    """
+    Combines two dictionaries of nerds format.
+    """
+    new = d1['host']['nmap_services_py']
+    old = d2['host']['nmap_services_py']
+    old_address = old['addresses'][0]
+    new['hostnames'] = list(set(new['hostnames'] + old['hostnames']))
+    new['addresses'] = list(set(new['addresses'] + old['addresses']))
+    new['services'][old_address] = old['services'][old_address]
+    # Ignoring os and uptime as they should not diff.
+    if VERBOSE:
+        logger.info('Host %s and %s merged in %s.' % (d1['host']['nmap_services_py']['addresses'][0], old_address, d1['host']['name']))
+    d1['host']['nmap_services_py'] = new
+    return d1
 
 def output(d, out_dir, no_write=False):
     out = json.dumps(d, sort_keys=True, indent=4)
@@ -76,14 +111,18 @@ def output(d, out_dir, no_write=False):
             out_dir += '/'
         try:
             try:
-                #TODO: check if file exists, if so combine results
+                #TODO: check if the merge will collide with writing host files...
                 if os.path.exists('%s%s' % (out_dir, d['host']['name'])):
-                    merge_host(d['host']['name'])
+                    f = open('%s%s' % (out_dir, d['host']['name']))
+                    d = merge_nmap_services(d, json.load(f))
+                    f.close()
                 f = open('%s%s' % (out_dir, d['host']['name']), 'w')
             except IOError:
-                os.mkdir(out_dir) # The directory to write in must exist
+                os.mkdir(out_dir) # The directory to write in might not exist
                 f = open('%s%s' % (out_dir, d['host']['name']), 'w')
             f.write(out)
+            if VERBOSE:
+                logger.info('%s written.' % f.name)
             f.close()
         except IOError as (errno, strerror):
             print "I/O error({0}): {1}".format(errno, strerror)
@@ -106,6 +145,9 @@ def main():
         help="Target address or network to scan"
     )
     args = parser.parse_args()
+    if args.verbose:
+        global VERBOSE
+        VERBOSE = True
     output_arguments = {
         'out_dir': args.O,
         'no_write': args.N
@@ -121,7 +163,7 @@ def main():
                 scanners.append(scan(target, nmap_arguments, output_arguments))
     # Wait for the scanners to finish
     while scanners:
-        if args.verbose:
+        if VERBOSE:
             print("Scanning >>>")
             time.sleep(1)
         for scanner in scanners:
