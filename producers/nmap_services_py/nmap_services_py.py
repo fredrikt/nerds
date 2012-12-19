@@ -30,7 +30,6 @@ def scan(target, nmap_arguments, output_arguments):
             logger.info('Finished scanning %s.' % host)
         d = nerds_format(host, scan_result)
         if d:
-
             output(d, output_arguments['out_dir'], output_arguments['no_write'])
 
     nma = nmap.PortScannerAsync()
@@ -60,8 +59,10 @@ def nerds_format(host, data):
         }
         # name
         if not nerds_format['host']['name']:
-            logger.info('Host %s not in DNS.' % host)
-            nerds_format['host']['name'] = host
+            logger.warn('Host %s not in DNS.' % host)
+            if VERBOSE:
+                logger.info('OS match: %s' % host_data['osmatch'][0].get('name', 'Unknown'))
+            return None
         # uptime
         if host_data.has_key('uptime'):
             nmap_services_py['uptime'] = host_data.uptime()
@@ -92,20 +93,21 @@ def merge_nmap_services(d1, d2):
     """
     new = d1['host']['nmap_services_py']
     old = d2['host']['nmap_services_py']
-    old_address = old['addresses'][0]
-    new['hostnames'] = list(set(new['hostnames'] + old['hostnames']))
-    new['addresses'] = list(set(new['addresses'] + old['addresses']))
-    new['services'][old_address] = old['services'][old_address]
+    new_address = new['addresses'][0]
+    old['hostnames'].extend(new['hostnames'])
+    old['hostnames'] = list(set(old['hostnames']))
+    old['addresses'].append(new_address)
+    old['addresses'] = list(set(old['addresses']))
+    old['services'][new_address] = new['services'][new_address]
     # Ignoring os and uptime as they should not diff.
     if VERBOSE:
-        logger.info('Host %s and %s merged in %s.' % (d1['host']['nmap_services_py']['addresses'][0], old_address, d1['host']['name']))
-    d1['host']['nmap_services_py'] = new
-    return d1
+        logger.info('Host %s merged in to %s.' % (new_address, d2['host']['name']))
+    d2['host']['nmap_services_py'] = old
+    return d2
 
 def output(d, out_dir, no_write=False):
-    out = json.dumps(d, sort_keys=True, indent=4)
     if no_write:
-        print out
+        print json.dumps(d, sort_keys=True, indent=4)
     else:
         if out_dir[-1] != '/': # Pad with / if user provides a broken path
             out_dir += '/'
@@ -120,10 +122,10 @@ def output(d, out_dir, no_write=False):
             except IOError:
                 os.mkdir(out_dir) # The directory to write in might not exist
                 f = open('%s%s' % (out_dir, d['host']['name']), 'w')
-            f.write(out)
+            f.write(json.dumps(d, sort_keys=True, indent=4))
+            f.close()
             if VERBOSE:
                 logger.info('%s written.' % f.name)
-            f.close()
         except IOError as (errno, strerror):
             print "I/O error({0}): {1}".format(errno, strerror)
 
@@ -163,9 +165,6 @@ def main():
                 scanners.append(scan(target, nmap_arguments, output_arguments))
     # Wait for the scanners to finish
     while scanners:
-        if VERBOSE:
-            print("Scanning >>>")
-            time.sleep(1)
         for scanner in scanners:
             if not scanner.still_scanning():
                 scanners.remove(scanner)
