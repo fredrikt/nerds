@@ -112,14 +112,14 @@ def output(d, out_dir, no_write=False):
         try:
             try:
                 #TODO: check if the merge will collide with writing host files...
-                if os.path.exists('%s%s' % (out_dir, d['host']['name'])):
-                    f = open('%s%s' % (out_dir, d['host']['name']))
+                if os.path.exists('%s%s.json' % (out_dir, d['host']['name'])):
+                    f = open('%s%s.json' % (out_dir, d['host']['name']))
                     d = merge_nmap_services(d, json.load(f))
                     f.close()
-                f = open('%s%s' % (out_dir, d['host']['name']), 'w')
+                f = open('%s%s.json' % (out_dir, d['host']['name']), 'w')
             except IOError:
                 os.mkdir(out_dir) # The directory to write in might not exist
-                f = open('%s%s' % (out_dir, d['host']['name']), 'w')
+                f = open('%s%s.json' % (out_dir, d['host']['name']), 'w')
             f.write(json.dumps(d, sort_keys=True, indent=4))
             f.close()
             if VERBOSE:
