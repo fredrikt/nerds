@@ -59,7 +59,11 @@ def nerds_format(host, data):
         }
         # name
         if not nerds_format['host']['name']:
-            logger.warn('Host %s not in DNS. OS match: %s' % (host, host_data['osmatch'][0].get('name', 'Unknown')))
+            if host_data.has_key('osmatch'):
+                os_match = host_data['osmatch'][0].get('name', 'Unknown')
+            else:
+                os_match = 'Unknown'
+            logger.warn('Host %s not in DNS. OS match: %s' % (host, os_match))
             return None
         # uptime
         if host_data.has_key('uptime'):
