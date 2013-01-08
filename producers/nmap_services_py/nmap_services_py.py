@@ -156,7 +156,7 @@ def main():
         'out_dir': args.O,
         'no_write': args.N
     }
-    nmap_arguments = '-PE -sV -O --osscan-limit -F'
+    nmap_arguments = '-PE -sV -O --osscan-guess'
     scanners = []
     if args.target:
         scanners.append(scan(args.target, nmap_arguments, output_arguments))
