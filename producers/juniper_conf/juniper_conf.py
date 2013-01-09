@@ -44,12 +44,16 @@ class Router:
     def __init__(self):
         self.name = ''
         self.version = ''
+        self.model = ''
         self.interfaces = []
         self.bgp_peerings = []
 
     def to_json(self):
-        j = {'name':self.name,
-             'version': self.version}
+        j = {
+            'name': self.name,
+            'version': self.version,
+            'model': self.model
+        }
         interfaces = []
         for interface in self.interfaces:
             interfaces.append(interface.to_json())
@@ -73,10 +77,14 @@ class Interface:
         self.unitdict = []
 
     def to_json(self):
-        j = {'name':self.name, 'bundle':self.bundle,
-            'description':self.description,
-            'vlantagging':self.vlantagging, 'tunnels':self.tunneldict,
-            'units':self.unitdict}
+        j = {
+            'name': self.name,
+            'bundle': self.bundle,
+            'description': self.description,
+            'vlantagging': self.vlantagging,
+            'tunnels': self.tunneldict,
+            'units': self.unitdict
+        }
         return j
 
 class BgpPeering:
@@ -89,9 +97,14 @@ class BgpPeering:
         self.as_number = None
 
     def to_json(self):
-        j = {'type':self.type,'remote_address':self.remote_address,
-            'description':self.description, 'local_address':self.local_address,
-            'group':self.group,'as_number':self.as_number}
+        j = {
+            'type': self.type,
+            'remote_address': self.remote_address,
+            'description': self.description,
+            'local_address': self.local_address,
+            'group': self.group,
+            'as_number': self.as_number
+        }
         return j
 
 
@@ -125,10 +138,17 @@ def get_hostname(xmldoc):
 
 def get_version(xmldoc):
     """
-    Finds and returns the JUNOS version.
+    Take the output from "show configuration" and fetches JUNOS version.
     """
     version = xmldoc.getElementsByTagName('version')[0].firstChild.data
     return version
+
+def get_model(xmldoc):
+    """
+    Take the output of "show chassis hardware" and fetches the router model.
+    """
+    model = xmldoc.getElementsByTagName('description')[0].firstChild.data
+    return model
 
 def get_interfaces(xmldoc, physical_interfaces=None):
     """
@@ -228,7 +248,7 @@ def get_bgp_peerings(xmldoc):
             list_of_peerings.append(peering)
     return list_of_peerings
 
-def parse_router(xmldoc, physical_interfaces=None):
+def parse_router(xmldoc, router_model='Unknown', physical_interfaces=None):
     """
     Takes a JunOS conf in XML format and returns a Router object.
     """
@@ -240,6 +260,7 @@ def parse_router(xmldoc, physical_interfaces=None):
     router = Router()
     router.name = get_hostname(xmldoc)
     router.version = get_version(xmldoc)
+    router.model = router_model
     router.interfaces = get_interfaces(xmldoc, physical_interfaces)
     router.bgp_peerings = get_bgp_peerings(xmldoc)
     return router
@@ -398,15 +419,22 @@ def main():
         configuration = get_remote_xml(host, config.get('ssh', 'user'),
             config.get('ssh', 'password'), show_command)
         if configuration:
-            show_command = 'show interfaces | display xml |no-more'
+            show_command = 'show interfaces | display xml | no-more'
             interfaces = get_remote_xml(host, config.get('ssh', 'user'),
                 config.get('ssh', 'password'), show_command)
             if interfaces:
                 physical_interfaces = get_physical_interfaces(interfaces)
             else:
                 physical_interfaces = None
+            show_command = 'show chassis hardware | display xml | no-more'
+            hardware = get_remote_xml(host, config.get('ssh', 'user'),
+                config.get('ssh', 'password'), show_command)
+            if hardware:
+                router_model = get_model(hardware)
+            else:
+                router_model = 'Unknown'
             # Parse the xml document to create a Router object
-            router = parse_router(configuration, physical_interfaces)
+            router = parse_router(configuration, router_model, physical_interfaces)
             # Write JSON
             write_output(router, not_to_disk, out_dir)
     return 0
