@@ -248,7 +248,7 @@ def get_bgp_peerings(xmldoc):
             list_of_peerings.append(peering)
     return list_of_peerings
 
-def parse_router(xmldoc, router_model='Unknown', physical_interfaces=None):
+def parse_router(xmldoc, router_model=None, physical_interfaces=None):
     """
     Takes a JunOS conf in XML format and returns a Router object.
     """
@@ -432,7 +432,7 @@ def main():
             if hardware:
                 router_model = get_model(hardware)
             else:
-                router_model = 'Unknown'
+                router_model = None
             # Parse the xml document to create a Router object
             router = parse_router(configuration, router_model, physical_interfaces)
             # Write JSON
