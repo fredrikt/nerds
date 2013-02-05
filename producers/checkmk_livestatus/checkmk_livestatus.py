@@ -28,7 +28,7 @@ VERBOSE = False
 
 def checkmk_livestatus(socket_path="/var/nagios/var/rw/live"):
     columns = [
-        'host_name', # Needed for NERDS formatting
+        'host_name',    # Needed for NERDS formatting
         'host_address', # Needed for NERDS formatting
         'host_alias',
         'check_command',
@@ -68,23 +68,28 @@ def nerds_format(columns, data):
     processing_dict = {}
     for item in data:
         z = dict(zip(columns, item))
-        d = processing_dict.setdefault(z['host_name'],
-            {
-                'host':{
-                    'name': z['host_name'],
-                    'version': 1,
-                    'checkmk_livestatus': {
-                        'host_name': z['host_name'],
-                        'host_alias': z['host_alias'],
-                        'host_address': z['host_address'],
-                        'checks': []
+        try:
+            d = processing_dict.setdefault(z['host_name'],
+                {
+                    'host':{
+                        'name': z['host_name'],
+                        'version': 1,
+                        'checkmk_livestatus': {
+                            'host_name': z['host_name'],
+                            'host_alias': z.get('host_alias', None),
+                            'host_address': z['host_address'],
+                            'checks': []
+                        }
                     }
                 }
-            }
-        )
-        del z['host_name']
-        del z['host_alias']
-        del z['host_address']
+            )
+            del z['host_name']
+            del z['host_address']
+        except KeyError:
+            logger.error('host_name or host_address is missing in columns for the query.')
+            sys.exit(1)
+        if z.get('host_alias', None):
+            del z['host_alias']
         d['host']['checkmk_livestatus']['checks'].append(z)
     return processing_dict.values()
 
@@ -122,7 +127,7 @@ def main():
         VERBOSE = True
     columns, data = checkmk_livestatus()
     nerds_list = nerds_format(columns, data)
-    write_output(nerds_list, args.N, args.O)
+    write_output(nerds_list, args.n, args.o)
 
 if __name__ == '__main__':
     main()
