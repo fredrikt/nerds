@@ -56,7 +56,13 @@ def checkmk_livestatus(socket_path="/var/nagios/var/rw/live"):
     # the other side knows, we are finished.
     s.shutdown(socket.SHUT_WR)
     # Now read the answer
-    data = json.loads(s.recv(100000000))
+    recv = s.recv(100000000)
+    try:
+        data = json.loads(recv)
+    except ValueError as e:
+        logger.error('Value error: %s' % e)
+        logger.error('Malformed date received:\n%s\n Exiting...' % recv)
+        sys.exit(1)
     return columns, data
 
 def nerds_format(columns, data):
@@ -113,6 +119,7 @@ def write_output(nerds_list, not_to_disk=False, out_dir='./json/'):
                 f.close()
             except IOError as (errno, strerror):
                 logger.error("I/O error({0}): {1}".format(errno, strerror))
+
 
 def main():
     # User friendly usage output
