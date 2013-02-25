@@ -61,7 +61,7 @@ def checkmk_livestatus(socket_path="/var/nagios/var/rw/live"):
         data = json.loads(recv)
     except ValueError as e:
         logger.error('Value error: %s' % e)
-        logger.error('Malformed date received:\n%s\n Exiting...' % recv)
+        logger.error('Malformed data received:\n%s\n Exiting...' % recv)
         sys.exit(1)
     return columns, data
 
