@@ -56,12 +56,12 @@ def checkmk_livestatus(socket_path="/var/nagios/var/rw/live"):
     # the other side knows, we are finished.
     s.shutdown(socket.SHUT_WR)
     # Now read the answer
-    recv = s.recv(100000000)
+    recv = s.recv(1000000000)
     try:
         data = json.loads(recv)
     except ValueError as e:
         logger.error('Value error: %s' % e)
-        logger.error('Malformed data received:\n%s\n Exiting...' % recv)
+        logger.error('Malformed data received. Exiting...')
         sys.exit(1)
     return columns, data
 
