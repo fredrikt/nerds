@@ -39,20 +39,21 @@ def checkmk_livestatus(socket_path="/var/nagios/var/rw/live"):
         'perf_data',
         'plugin_output'
     ]
-    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    try:
-        s.connect(socket_path)
-    except socket.error as e:
-        logger.error('Socket error: %s' % e)
-        logger.error('Could not open socket: "%s". Exiting...' % socket_path)
-        sys.exit(1)
-    # Write command to socket
     # See http://mathias-kettner.de/checkmk_livestatus.html#H1:Using%20Livestatus for query format
     data_recevied = False
     t = 0
+    # Try to get the data 5 times with a delay of 1 second between tries before giving up.
     while not data_recevied:
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        try:
+            s.connect(socket_path)
+        except socket.error as e:
+            logger.error('Socket error: %s' % e)
+            logger.error('Could not open socket: "%s". Exiting...' % socket_path)
+            sys.exit(1)
         if VERBOSE:
             logger.info('Sending query...')
+        # Write command to socket
         s.send("GET services\nColumns:%s\nOutputFormat:json\nColumnHeaders:off\n" % ' '.join(columns))
         # Important: Close sending direction. That way
         # the other side knows, we are finished.
