@@ -6,6 +6,7 @@ import os
 import json
 import socket
 import logging
+from time import sleep
 
 
 logger = logging.getLogger('checkmk_livestatus')
@@ -47,22 +48,28 @@ def checkmk_livestatus(socket_path="/var/nagios/var/rw/live"):
         sys.exit(1)
     # Write command to socket
     # See http://mathias-kettner.de/checkmk_livestatus.html#H1:Using%20Livestatus for query format
-    #s.send("GET hosts\n")
-    #s.send("GET services\nFilter: description ~ check_uptime\nColumns: host_name plugin_output perf_data\nOutputFormat: python\nColumnHeaders: on\n")
-    if VERBOSE:
-        logger.info('Sending query...')
-    s.send("GET services\nColumns:%s\nOutputFormat:json\nColumnHeaders:off\n" % ' '.join(columns))
-    # Important: Close sending direction. That way
-    # the other side knows, we are finished.
-    s.shutdown(socket.SHUT_WR)
-    # Now read the answer
-    recv = s.recv(1000000000)
-    try:
-        data = json.loads(recv)
-    except ValueError as e:
-        logger.error('Value error: %s' % e)
-        logger.error('Malformed data received. Exiting...')
-        sys.exit(1)
+    data_recevied = False
+    t = 0
+    while not data_recevied:
+        if VERBOSE:
+            logger.info('Sending query...')
+        s.send("GET services\nColumns:%s\nOutputFormat:json\nColumnHeaders:off\n" % ' '.join(columns))
+        # Important: Close sending direction. That way
+        # the other side knows, we are finished.
+        s.shutdown(socket.SHUT_WR)
+        # Now read the answer
+        recv = s.recv(100000000)
+        try:
+            data = json.loads(recv)
+            data_recevied = True
+        except ValueError as e:
+            t += 1
+            logger.error('Value error: %s' % e)
+            logger.error('Malformed data received. Trying again...')
+            if t >= 5:
+                logger.error('Tried five times. Exiting...')
+                sys.exit(1)
+            sleep(1)
     return columns, data
 
 def nerds_format(columns, data):
