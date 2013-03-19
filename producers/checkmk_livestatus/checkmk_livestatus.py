@@ -27,10 +27,11 @@ logger.addHandler(ch)
 
 VERBOSE = False
 
+
 def checkmk_livestatus(socket_path="/var/nagios/var/rw/live"):
     columns = [
-        'host_name',    # Needed for NERDS formatting
-        'host_address', # Needed for NERDS formatting
+        'host_name',     # Needed for NERDS formatting
+        'host_address',  # Needed for NERDS formatting
         'host_alias',
         'check_command',
         'description',
@@ -40,9 +41,9 @@ def checkmk_livestatus(socket_path="/var/nagios/var/rw/live"):
         'plugin_output'
     ]
     # See http://mathias-kettner.de/checkmk_livestatus.html#H1:Using%20Livestatus for query format
-    data_recevied = False
+    data = data_recevied = None
     t = 0
-    # Try to get the data 5 times with a delay of 1 second between tries before giving up.
+    # Try to get the data 10 times with a delay of 1 second between tries before giving up.
     while not data_recevied:
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         try:
@@ -59,7 +60,7 @@ def checkmk_livestatus(socket_path="/var/nagios/var/rw/live"):
         # the other side knows, we are finished.
         s.shutdown(socket.SHUT_WR)
         # Now read the answer
-        recv = s.recv(100000000)
+        recv = s.recv(10000000)
         try:
             data = json.loads(recv)
             data_recevied = True
@@ -67,11 +68,12 @@ def checkmk_livestatus(socket_path="/var/nagios/var/rw/live"):
             t += 1
             logger.error('Value error: %s' % e)
             logger.error('Malformed data received. Trying again...')
-            if t >= 5:
-                logger.error('Tried five times. Exiting...')
+            if t >= 10:
+                logger.error('Tried ten times. Exiting...')
                 sys.exit(1)
             sleep(1)
     return columns, data
+
 
 def nerds_format(columns, data):
     """
@@ -85,7 +87,7 @@ def nerds_format(columns, data):
         try:
             d = processing_dict.setdefault(z['host_name'],
                 {
-                    'host':{
+                    'host': {
                         'name': z['host_name'],
                         'version': 1,
                         'checkmk_livestatus': {
@@ -107,6 +109,7 @@ def nerds_format(columns, data):
         d['host']['checkmk_livestatus']['checks'].append(z)
     return processing_dict.values()
 
+
 def write_output(nerds_list, not_to_disk=False, out_dir='./json/'):
     for item in nerds_list:
         out = json.dumps(item, sort_keys=True, indent=4)
@@ -119,7 +122,7 @@ def write_output(nerds_list, not_to_disk=False, out_dir='./json/'):
                 try:
                     f = open('%s%s.json' % (out_dir, item['host']['name']), 'w')
                 except IOError:
-                    os.mkdir(out_dir) # The directory to write in must exist
+                    os.mkdir(out_dir)  # The directory to write in must exist
                     f = open('%s%s.json' % (out_dir, item['host']['name']), 'w')
                 if VERBOSE:
                     logger.info('Writing %s to disk.' % f.name)
@@ -134,7 +137,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-o', default='./json/', nargs='?', help='Path to output directory.')
     parser.add_argument('-n', action='store_true',
-        help='Don\'t write output to disk.')
+                        help='Don\'t write output to disk.')
     parser.add_argument('--verbose', '-v', action='store_true', default=False)
     args = parser.parse_args()
     if args.verbose:
