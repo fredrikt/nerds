@@ -2,7 +2,6 @@
 
 import argparse
 import os
-import time
 import json
 import nmap
 import logging
@@ -24,6 +23,7 @@ logger.addHandler(ch)
 
 VERBOSE = False
 
+
 def scan(target, nmap_arguments, output_arguments):
     def callback_result(host, scan_result):
         if VERBOSE:
@@ -36,6 +36,7 @@ def scan(target, nmap_arguments, output_arguments):
     nma.scan(hosts=target, arguments=nmap_arguments, callback=callback_result)
     return nma
 
+
 def nerds_format(host, data):
     """
     Transform the nmap output to the NERDS format.
@@ -43,7 +44,7 @@ def nerds_format(host, data):
     if data['scan']:
         host_data = data['scan'][host]
         nerds_format = {
-            'host':{
+            'host': {
                 'name': host_data['hostname'],
                 'version': 1,
                 'nmap_services_py': None
@@ -51,36 +52,36 @@ def nerds_format(host, data):
         }
         nmap_services_py = {
             'addresses': [host],
-            'hostnames':[host_data['hostname']],
+            'hostnames': [host_data['hostname']],
             'os': {},
-            'services':{
+            'services': {
                 host: {}
             }
         }
         # name
         if not nerds_format['host']['name']:
-            if host_data.has_key('osmatch'):
+            if 'osmatch' in host_data:
                 os_match = host_data['osmatch'][0].get('name', 'Unknown')
             else:
                 os_match = 'Unknown'
             logger.warn('Host %s not in DNS. OS match: %s' % (host, os_match))
             return None
         # uptime
-        if host_data.has_key('uptime'):
+        if 'uptime' in host_data:
             nmap_services_py['uptime'] = host_data.uptime()
         # services
-        if host_data.has_key('tcp'):
+        if 'tcp' in host_data:
             nmap_services_py['services'][host]['tcp'] = host_data['tcp']
-        if host_data.has_key('udp'):
+        if 'udp' in host_data:
             nmap_services_py['services'][host]['udp'] = host_data['udp']
-        if host_data.has_key('ip'):
+        if 'ip' in host_data:
             nmap_services_py['services'][host]['ip'] = host_data['ip']
-        if host_data.has_key('sctp'):
+        if 'sctp' in host_data:
             nmap_services_py['services'][host]['sctp'] = host_data['sctp']
         # os
-        if host_data.has_key('osclass'):
+        if 'osclass' in host_data:
             nmap_services_py['os']['class'] = host_data['osclass'][0]
-        if host_data.has_key('osmatch'):
+        if 'osmatch' in host_data:
             nmap_services_py['os']['match'] = host_data['osmatch'][0]
         nerds_format['host']['nmap_services_py'] = nmap_services_py
         if VERBOSE:
@@ -88,6 +89,7 @@ def nerds_format(host, data):
         return nerds_format
     else:
         return None
+
 
 def merge_nmap_services(d1, d2):
     """
@@ -107,22 +109,27 @@ def merge_nmap_services(d1, d2):
     d2['host']['nmap_services_py'] = old
     return d2
 
+
 def output(d, out_dir, no_write=False):
     if no_write:
         print json.dumps(d, sort_keys=True, indent=4)
     else:
-        if out_dir[-1] != '/': # Pad with / if user provides a broken path
+        if out_dir[-1] != '/':  # Pad with / if user provides a broken path
             out_dir += '/'
         try:
             try:
                 #TODO: check if the merge will collide with writing host files...
                 if os.path.exists('%s%s.json' % (out_dir, d['host']['name'])):
                     f = open('%s%s.json' % (out_dir, d['host']['name']))
-                    d = merge_nmap_services(d, json.load(f))
+                    try:
+                        d = merge_nmap_services(d, json.load(f))
+                    except ValueError:
+                        # Previous file was damaged on some way, ignore it.
+                        pass
                     f.close()
                 f = open('%s%s.json' % (out_dir, d['host']['name']), 'w')
             except IOError:
-                os.mkdir(out_dir) # The directory to write in might not exist
+                os.mkdir(out_dir)  # The directory to write in might not exist
                 f = open('%s%s.json' % (out_dir, d['host']['name']), 'w')
             f.write(json.dumps(d, sort_keys=True, indent=4))
             f.close()
@@ -130,6 +137,7 @@ def output(d, out_dir, no_write=False):
                 logger.info('%s written.' % f.name)
         except IOError as (errno, strerror):
             print "I/O error({0}): {1}".format(errno, strerror)
+
 
 def main():
     # User friendly usage output
