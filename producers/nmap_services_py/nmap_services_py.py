@@ -171,7 +171,7 @@ def main():
     elif args.list:
         for target in args.list:
             target = target.strip()
-            if target and not target.startwidth('#'):
+            if target and not target.startswith('#'):
                 scanners.append(scan(target, nmap_arguments, output_arguments))
     # Wait for the scanners to finish
     while scanners:
