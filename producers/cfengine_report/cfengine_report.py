@@ -83,7 +83,6 @@ def main():
 
     # Create the json output
     out = []
-    print csvs
     try:
         for csv in csvs:
             for host in csv.keys():
