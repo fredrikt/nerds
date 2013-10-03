@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#       csv_producer.py
+#       cfengine_report.py
 #
-#       Copyright 2011 Johan Lundberg <lundberg@nordu.net>
+#       Copyright 2013 Johan Lundberg <lundberg@nordu.net>
 #
 #       This program is free software; you can redistribute it and/or modify
 #       it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 cfengine_report is written for the NERDS project.
 (http://github.com/fredrikt/nerds/).
 
-The script produces JSON output in the NERDS format from the provided cfengine report CSV file.
+The script produces JSON output in the NERDS format from a cfengine report CSV file.
 """
 
 import sys
@@ -42,7 +42,7 @@ def normalize_whitespace(text):
     return ' '.join(text.split())
 
 
-def read_csv(f, delim=','):
+def read_csv(f, delim):
     key_list = normalize_whitespace(f.readline()).split(delim)
     key_list[0] = 'name'  # Changing HostName to name.
     line = normalize_whitespace(f.readline())
