@@ -227,26 +227,22 @@ def get_bgp_peerings(xmldoc):
     """
     bgp = xmldoc.getElementsByTagName('bgp')
     list_of_peerings = []
-    try:
-        groups = bgp[0].getElementsByTagName('group')
-    except IndexError:
-        return list_of_peerings
-    for element in groups:
-        group_name = get_firstchild_data(element, 'name')
-        group_type = get_firstchild_data(element, 'type')
-        local_address = get_firstchild_data(element, 'local-address')
-        neighbors = element.getElementsByTagName('neighbor')
-        for neighbor in neighbors:
-            #if not neighbor.hasAttribute('inactive')
-            peering = BgpPeering()
-            peering.type = group_type
-            peering.remote_address = get_firstchild_data(neighbor, 'name')
-            peering.description = get_firstchild_data(neighbor,
-                'description')
-            peering.local_address = local_address
-            peering.group = group_name
-            peering.as_number = get_firstchild_data(neighbor,'peer-as')
-            list_of_peerings.append(peering)
+    for element in bgp:
+        for group in element.getElementsByTagName('group'):
+            group_name = get_firstchild_data(group, 'name')
+            group_type = get_firstchild_data(group, 'type')
+            local_address = get_firstchild_data(group, 'local-address')
+            neighbors = group.getElementsByTagName('neighbor')
+            for neighbor in neighbors:
+                #if not neighbor.hasAttribute('inactive')
+                peering = BgpPeering()
+                peering.type = group_type
+                peering.remote_address = get_firstchild_data(neighbor, 'name')
+                peering.description = get_firstchild_data(neighbor, 'description')
+                peering.local_address = local_address
+                peering.group = group_name
+                peering.as_number = get_firstchild_data(neighbor, 'peer-as')
+                list_of_peerings.append(peering)
     return list_of_peerings
 
 def parse_router(xmldoc, router_model=None, physical_interfaces=None):
