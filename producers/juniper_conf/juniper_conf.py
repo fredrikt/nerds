@@ -165,9 +165,10 @@ def get_interfaces(xmldoc, physical_interfaces=None):
     """
     interfaces_elements = xmldoc.getElementsByTagName('interfaces') # This will get _all_ interfaces elements...
     interface_elements = []
+    interface_parents = ['configuration']
     for i in interfaces_elements:
         # We just want the interfaces element that is directly under configuration
-        if i.parentNode.tagName == 'configuration':
+        if i.parentNode.tagName in interface_parents:
             interface_elements.extend(list(i.getElementsByTagName('interface')))
     interfaces = []
     for interface in interface_elements:
