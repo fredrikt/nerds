@@ -7,4 +7,4 @@ dir=$(dirname $0)
 # A template config file should have been provided.
 # Use ./run.sh -h for help.
 exec $dir/juniper_conf.py $*
-exec /usr/local/sbin/ni-push.sh -r /var/nistore/
+#exec /usr/local/sbin/ni-push.sh -r /var/nistore/
