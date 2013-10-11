@@ -5,6 +5,7 @@ import os
 import json
 import nmap
 import logging
+import time
 
 logger = logging.getLogger('nmap_services_py')
 logger.setLevel(logging.INFO)
@@ -178,6 +179,7 @@ def main():
         for scanner in scanners:
             if not scanner.still_scanning():
                 scanners.remove(scanner)
+        time.sleep(5)
 
 if __name__ == '__main__':
     main()
