@@ -174,12 +174,14 @@ def main():
             target = target.strip()
             if target and not target.startswith('#'):
                 scanners.append(scan(target, nmap_arguments, output_arguments))
+                time.sleep(20)  # Wait 20 seconds for a scanner to start
     # Wait for the scanners to finish
     while scanners:
         for scanner in scanners:
             if not scanner.still_scanning():
                 scanners.remove(scanner)
-        time.sleep(5)
+                logger.info('%d scanners still scanning.' % len(scanners))
+            time.sleep(5)
 
 if __name__ == '__main__':
     main()
