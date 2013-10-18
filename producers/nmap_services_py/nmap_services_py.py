@@ -6,6 +6,7 @@ import json
 import nmap
 import logging
 import time
+import gc
 
 logger = logging.getLogger('nmap_services_py')
 logger.setLevel(logging.INFO)
@@ -175,13 +176,17 @@ def main():
             if target and not target.startswith('#'):
                 scanners.append(scan(target, nmap_arguments, output_arguments))
                 time.sleep(20)  # Wait 20 seconds for a scanner to start
+    gc.collect()
     # Wait for the scanners to finish
     while scanners:
+        time.sleep(60)  # Check if scanners are done every minute
         for scanner in scanners:
             if not scanner.still_scanning():
                 scanners.remove(scanner)
                 logger.info('%d scanners still scanning.' % len(scanners))
-            time.sleep(5)
+            time.sleep(5)  # Check a scanner every 5 seconds
+        gc.collect()
+
 
 if __name__ == '__main__':
     main()
