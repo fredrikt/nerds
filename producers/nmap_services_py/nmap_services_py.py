@@ -147,6 +147,8 @@ def main():
     parser.add_argument('-O', nargs='?', default='./json/', help='Path to output directory.')
     parser.add_argument('-N', action='store_true', default=False, help='Don\'t write output to disk.')
     parser.add_argument('--verbose', '-v', action='store_true', default=False)
+    parser.add_argument('--known', '-k', action='store_true', default=False,
+                        help='Takes a list of known hosts with specified ports.')
     parser.add_argument(
         '--list',
         '-L',
@@ -172,7 +174,17 @@ def main():
         scanners.append(scan(args.target, nmap_arguments, output_arguments))
     elif args.list:
         for target in args.list:
-            target = target.strip()
+            if not args.known:
+                target = target.strip()
+            else:
+                try:
+                    # Line should match "address U:X,X,T:X-X,X"
+                    # http://nmap.org/book/man-port-specification.html
+                    target, ports = target.strip().split()
+                    nmap_arguments = '-PE -sV -sU -O --osscan-guess -p %s' % ports
+                except ValueError:
+                    logger.error('Could not make sense of \"%s\".' % target)
+                    continue
             if target and not target.startswith('#'):
                 scanners.append(scan(target, nmap_arguments, output_arguments))
                 time.sleep(20)  # Wait 20 seconds for a scanner to start
