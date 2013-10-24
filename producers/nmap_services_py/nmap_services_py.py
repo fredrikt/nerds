@@ -26,7 +26,7 @@ logger.addHandler(ch)
 VERBOSE = False
 
 
-def scan(target, nmap_arguments, output_arguments):
+def scan(target, nmap_arguments, ports, output_arguments):
     def callback_result(host, scan_result):
         if VERBOSE:
             logger.info('Finished scanning %s.' % host)
@@ -35,7 +35,7 @@ def scan(target, nmap_arguments, output_arguments):
             output(d, output_arguments['out_dir'], output_arguments['no_write'])
 
     nma = nmap.PortScannerAsync()
-    nma.scan(hosts=target, arguments=nmap_arguments, callback=callback_result)
+    nma.scan(hosts=target, ports=ports, arguments=nmap_arguments, callback=callback_result)
     return nma
 
 
@@ -175,20 +175,21 @@ def main():
     elif args.list:
         for target in args.list:
             if not args.known:
+                ports = None
                 target = target.strip()
             else:
                 try:
                     # Line should match "address U:X,X,T:X-X,X"
                     # http://nmap.org/book/man-port-specification.html
                     target, ports = target.strip().split()
-                    nmap_arguments = '-PE -sV -sS -sU -O --osscan-guess -p %s' % ports
+                    nmap_arguments = '-PE -sV -sS -sU -O --osscan-guess'
                 except ValueError:
                     logger.error('Could not make sense of "%s".' % target)
                     logger.info('Line should match "address U:X,X,T:X-X,X"')
                     logger.info('http://nmap.org/book/man-port-specification.html')
                     continue
             if target and not target.startswith('#'):
-                scanners.append(scan(target, nmap_arguments, output_arguments))
+                scanners.append(scan(target, nmap_arguments, ports, output_arguments))
                 time.sleep(20)  # Wait 20 seconds for a scanner to start
     gc.collect()
     # Wait for the scanners to finish
