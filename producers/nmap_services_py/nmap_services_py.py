@@ -181,7 +181,7 @@ def main():
                     # Line should match "address U:X,X,T:X-X,X"
                     # http://nmap.org/book/man-port-specification.html
                     target, ports = target.strip().split()
-                    nmap_arguments = '-PE -sV -sU -O --osscan-guess -p %s' % ports
+                    nmap_arguments = '-PE -sV -sS -sU -O --osscan-guess -p %s' % ports
                 except ValueError:
                     logger.error('Could not make sense of "%s".' % target)
                     logger.info('Line should match "address U:X,X,T:X-X,X"')
