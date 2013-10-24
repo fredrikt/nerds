@@ -183,7 +183,9 @@ def main():
                     target, ports = target.strip().split()
                     nmap_arguments = '-PE -sV -sU -O --osscan-guess -p %s' % ports
                 except ValueError:
-                    logger.error('Could not make sense of \"%s\".' % target)
+                    logger.error('Could not make sense of "%s".' % target)
+                    logger.info('Line should match "address U:X,X,T:X-X,X"')
+                    logger.info('http://nmap.org/book/man-port-specification.html')
                     continue
             if target and not target.startswith('#'):
                 scanners.append(scan(target, nmap_arguments, output_arguments))
