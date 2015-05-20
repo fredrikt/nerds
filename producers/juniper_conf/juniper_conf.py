@@ -327,7 +327,7 @@ def get_remote_xml(host, username, password, show_command):
         # Send JunOS command for displaying the configuration in XML
         # format.
         s.sendline(show_command)
-        s.expect('</rpc-reply>', timeout=120)   # expect end of the XML
+        s.expect('</rpc-reply>', timeout=600)   # expect end of the XML
                                                 # blob
         xml = s.before # take everything printed before last expect()
         s.sendline('exit')
