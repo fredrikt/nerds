@@ -1,0 +1,75 @@
+<rpc-reply xmlns:junos="http://xml.juniper.net/junos/12.3R6/junos">
+    <chassis-inventory xmlns="http://xml.juniper.net/junos/12.3R6/junos-chassis">
+        <chassis junos:style="inventory">
+            <name>Chassis</name>
+            <serial-number>11111</serial-number>
+            <description>T4000</description>
+            <chassis-module>
+                <name>Midplane</name>
+                <version>REV 03</version>
+                <part-number>111-111111</part-number>
+                <serial-number>xxxxx1</serial-number>
+                <description>T640 Backplane</description>
+                <model-number>CHAS-BP-T640-S</model-number>
+            </chassis-module>
+            <chassis-module>
+                <name>FPM GBUS</name>
+                <version>REV 09</version>
+                <part-number>222-222222</part-number>
+                <serial-number>xxxxx2</serial-number>
+                <description>T640 FPM Board</description>
+            </chassis-module>
+            <chassis-module>
+                <name>FPM Display</name>
+                <version>REV 06</version>
+                <part-number>333-333333</part-number>
+                <serial-number>xxxxxxx3</serial-number>
+                <description>T4000 FPM Display</description>
+                <clei-code>HIPPOCRAFT</clei-code>
+                <model-number>CRAFT-T-SERIES-S</model-number>
+            </chassis-module>
+            <chassis-module>
+                <name>FPC 0</name>
+                <version>REV 02</version>
+                <part-number>444-444444</part-number>
+                <serial-number>4</serial-number>
+                <description>FPC Type 5-3D</description>
+                <clei-code>FPCSWEETOK</clei-code>
+                <model-number>T4000-FPC5-3D</model-number>
+                <chassis-sub-module>
+                    <name>CPU</name>
+                    <version>REV 13</version>
+                    <part-number>555-555555</part-number>
+                    <serial-number>xxxxxxx5</serial-number>
+                    <description>SNG PMB</description>
+                </chassis-sub-module>
+                <chassis-sub-module>
+                    <name>PIC 0</name>
+                    <version>REV 17</version>
+                    <part-number>666-666666</part-number>
+                    <serial-number>xxxxxxx6</serial-number>
+                    <description>12x10GE (LAN/WAN) SFPP</description>
+                    <clei-code>TENGYEAHOK</clei-code>
+                    <model-number>PF-12XGE-SFPP</model-number>
+                    <chassis-sub-sub-module>
+                        <name>Xcvr 0</name>
+                        <version>REV 01</version>
+                        <part-number>777-777777</part-number>
+                        <serial-number>xxxxxx7</serial-number>
+                        <description>SFP+-10G-LR</description>
+                    </chassis-sub-sub-module>
+                    <chassis-sub-sub-module>
+                        <name>Xcvr 1</name>
+                        <version>REV 01</version>
+                        <part-number>888-888888</part-number>
+                        <serial-number>xxxxxx8</serial-number>
+                        <description>SFP+-10G-LR</description>
+                    </chassis-sub-sub-module>
+                </chassis-sub-module>
+            </chassis-module>
+        </chassis>
+    </chassis-inventory>
+    <cli>
+        <banner>{master}</banner>
+    </cli>
+</rpc-reply>

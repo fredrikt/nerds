@@ -25,6 +25,7 @@ import json
 import ConfigParser
 import argparse
 import logging
+from models import *
 
 logger = logging.getLogger('juniper_conf')
 logger.setLevel(logging.INFO)
@@ -39,74 +40,6 @@ logger.addHandler(ch)
 #
 #Depends on pexpect for remote config gathering.
 #If you have Python <2.7 you need to install argparse manually.
-
-class Router:
-    def __init__(self):
-        self.name = ''
-        self.version = ''
-        self.model = ''
-        self.interfaces = []
-        self.bgp_peerings = []
-
-    def to_json(self):
-        j = {
-            'name': self.name,
-            'version': self.version,
-            'model': self.model
-        }
-        interfaces = []
-        for interface in self.interfaces:
-            interfaces.append(interface.to_json())
-        j['interfaces'] = interfaces
-        bgp_peerings = []
-        for peering in self.bgp_peerings:
-            bgp_peerings.append(peering.to_json())
-        j['bgp_peerings'] = bgp_peerings
-        return j
-
-class Interface:
-    def __init__(self):
-        self.name = ''
-        self.bundle = ''
-        self.description = ''
-        self.vlantagging = ''
-        self.tunneldict = []
-        # Unit dict is a list of dictionaries containing units to
-        # interfaces, should be index like {'unit': 'name',
-        # 'description': 'foo', 'vlanid': 'bar', 'address': 'xyz'}
-        self.unitdict = []
-
-    def to_json(self):
-        j = {
-            'name': self.name,
-            'bundle': self.bundle,
-            'description': self.description,
-            'vlantagging': self.vlantagging,
-            'tunnels': self.tunneldict,
-            'units': self.unitdict
-        }
-        return j
-
-class BgpPeering:
-    def __init__(self):
-        self.type = None
-        self.remote_address = None
-        self.description = None
-        self.local_address = None
-        self.group = None
-        self.as_number = None
-
-    def to_json(self):
-        j = {
-            'type': self.type,
-            'remote_address': self.remote_address,
-            'description': self.description,
-            'local_address': self.local_address,
-            'group': self.group,
-            'as_number': self.as_number
-        }
-        return j
-
 
 def get_firstchild_data(element, tag):
     """
