@@ -10,7 +10,7 @@ class Router:
         self.hardware = ''
 
     def to_json(self):
-        j = vars(self)
+        j = vars(self).copy()
         j['interfaces'] = [i.to_json() for i in self.interfaces]
         j['bgp_peerings'] = [p.to_json() for p in self.bgp_peerings]
         if self.hardware:
@@ -50,6 +50,6 @@ class BgpPeering:
         self.as_number = None
 
     def to_json(self):
-        j = vars(self)
+        j = vars(self).copy()
         return j
 
