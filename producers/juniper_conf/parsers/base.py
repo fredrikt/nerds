@@ -30,6 +30,16 @@ class ElementParser:
             Wraps all elements in a new ElementParser.
         """
         return [ElementParser(n) for n in self.nodeTree.getElementsByTagName(tag)]
+    def parent(self):
+        """
+            Returns parent node.
+        """
+        return ElementParser(self.nodeTree.parentNode)
+    def tag(self):
+        """
+            Returns current tag name.
+        """
+        return self.nodeTree.tagName
 
 class EmptyTree:
     """
