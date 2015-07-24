@@ -19,13 +19,14 @@
 # along with NERDS. If not, see <http://www.gnu.org/licenses/>.
 
 from xml.dom import minidom
-import os
 import sys
-import json
 import ConfigParser
 import argparse
 import logging
 from models import *
+from parsers.base import ElementParser
+from parsers import *
+from util import JsonWriter
 
 logger = logging.getLogger('juniper_conf')
 logger.setLevel(logging.INFO)
@@ -41,16 +42,6 @@ logger.addHandler(ch)
 #Depends on pexpect for remote config gathering.
 #If you have Python <2.7 you need to install argparse manually.
 
-def get_firstchild_data(element, tag):
-    """
-    Takes xml element and a name of a tag.
-    Returns the data from a tag when looping over a parent.
-    """
-    try:
-        data = element.getElementsByTagName(tag).item(0).firstChild.data
-    except AttributeError:
-        data = None
-    return data
 
 def get_hostname(xmldoc):
     """
@@ -69,95 +60,11 @@ def get_hostname(xmldoc):
         hostname = hostname.replace('-re0','').replace('-re1','')
     return hostname
 
-def get_version(xmldoc):
-    """
-    Take the output from "show configuration" and fetches JUNOS version.
-    """
-    version = xmldoc.getElementsByTagName('version')[0].firstChild.data
-    return version
-
-def get_model(xmldoc):
-    """
-    Take the output of "show chassis hardware" and fetches the router model.
-    """
-    model = xmldoc.getElementsByTagName('description')[0].firstChild.data
-    return model
-
-def get_interfaces(xmldoc, physical_interfaces=None):
-    """
-    Returns a list of Interface objects made out from all interfaces in
-    the JunOS config.
-
-    Dive in to Python writes:
-    "When you parse an XML document, you get a bunch of Python objects
-    that represent all the pieces of the XML document, and some of these
-    Python objects represent attributes of the XML elements. But the
-    (Python) objects that represent the (XML) attributes also have
-    (Python) attributes, which are used to access various parts of the
-    (XML) attribute that the object represents." ARGH ;)
-    """
-    interfaces_elements = xmldoc.getElementsByTagName('interfaces') # This will get _all_ interfaces elements...
-    interface_elements = []
-    interface_parents = ['configuration']
-    for i in interfaces_elements:
-        # We just want the interfaces element that is directly under configuration
-        if i.parentNode.tagName in interface_parents:
-            interface_elements.extend(list(i.getElementsByTagName('interface')))
-    interfaces = []
-    for interface in interface_elements:
-        tempInterface = Interface()
-        # Interface name, ge-0/1/0 or similar
-        tempInterface.name = get_firstchild_data(interface, 'name')
-        # If we have a list of physical interfaces in the router match against it
-        if physical_interfaces and not tempInterface.name in physical_interfaces:
-            logger.warn('Interface %s is configured but not found in %s.' % (tempInterface.name, get_hostname(xmldoc)))
-            continue
-        elif physical_interfaces:
-            physical_interfaces.remove(tempInterface.name)
-        # Is the interface vlan-tagging?
-        vlantag = interface.getElementsByTagName('vlan-tagging').item(0)
-        if vlantag:
-            tempInterface.vlantagging = True
-        else:
-            tempInterface.vlantagging = False
-        # Is it a bundled interface?
-        tempInterface.bundle = get_firstchild_data(interface, 'bundle')
-        # Get the interface description
-        tempInterface.description = get_firstchild_data(interface, 'description')
-        # Get tunnel information if any
-        source = get_firstchild_data(interface, 'source')
-        destination = get_firstchild_data(interface, 'destination')
-        tempInterface.tunneldict.append({'source' : source,
-            'destination': destination})
-        # Get all information per interface unit
-        units = interface.getElementsByTagName('unit')
-        desctemp = ''
-        vlanidtemp = ''
-        nametemp = ''
-        for unit in units:
-            unittemp = get_firstchild_data(unit, 'name')
-            desctemp = get_firstchild_data(unit, 'description')
-            vlanidtemp = get_firstchild_data(unit, 'vlan-id')
-            addresses = unit.getElementsByTagName('address')
-            nametemp = []
-            for address in addresses:
-                nametemp.append(get_firstchild_data(address, 'name'))
-            tempInterface.unitdict.append({'unit': unittemp,
-                'description': desctemp, 'vlanid': vlanidtemp,
-                'address': nametemp})
-        # Add interface to the collection of interfaces
-        interfaces.append(tempInterface)
-    if physical_interfaces: # Physical interfaces that are not configured
-        for interface in physical_interfaces:
-            tempInterface = Interface()
-            tempInterface.name = interface
-            interfaces.append(tempInterface)
-    return interfaces
-
-def parse_router(xmldoc, router_model=None, physical_interfaces=None):
+def parse_router(xmldoc, router_model=None, physical_interfaces=[]):
     """
     Takes a JunOS conf in XML format and returns a Router object.
     """
+    routerConf = ElementParser(xmldoc)
     # Until we decide how we will handle logical-systems we remove them from
     # the configuration.
     logical_systems = xmldoc.getElementsByTagName('logical-systems')
@@ -165,9 +72,9 @@ def parse_router(xmldoc, router_model=None, physical_interfaces=None):
         item.parentNode.removeChild(item).unlink()
     router = Router()
     router.name = get_hostname(xmldoc)
-    router.version = get_version(xmldoc)
+    router.version = routerConf.first("version").text()
     router.model = router_model
-    router.interfaces = get_interfaces(xmldoc, physical_interfaces)
+    router.interfaces = InterfaceParser().parse(xmldoc, physical_interfaces)
     router.bgp_peerings = BgpPeeringParser().parse(xmldoc)
     return router
 
@@ -176,11 +83,7 @@ def get_physical_interfaces(xmldoc):
     Takes the output of "show interfaces" and creates a list of interface names that
     are physically in the router.
     """
-    physical_interfaces_elements = xmldoc.getElementsByTagName('physical-interface')
-    physical_interface_names = []
-    for i in physical_interfaces_elements:
-        physical_interface_names.append(get_firstchild_data(i, 'name'))
-    return physical_interface_names
+    return [ p.first("name").text() for p in ElementParser(xmldoc).all("physical-interfaces") ]
 
 def init_config(path):
     """
@@ -255,39 +158,6 @@ def get_remote_xml(host, username, password, show_command):
         return False
     return xmldoc
 
-def write_output(router, not_to_disk=False, out_dir='./json/'):
-
-    # Call .tojson() for all Router objects and merge that with the
-    # nerds template. Store the json in the dictionary out with the key
-    # name.
-    template = {'host':
-                    {'name': router.name,
-                     'version': 1,
-                     'juniper_conf': {}
-                    }
-                }
-    template['host']['juniper_conf'] = router.to_json()
-    out = json.dumps(template, indent=4)
-    # Depending on which arguments the user provided print to file or
-    # to stdout.
-    if not_to_disk:
-        print out
-    else:
-        # Pad with / if user provides a broken path
-        if out_dir[-1] != '/':
-            out_dir += '/'
-        try:
-            try:
-                f = open('%s%s.json' % (out_dir, router.name), 'w')
-            except IOError:
-                # The directory to write in must exist
-                os.mkdir(out_dir)
-                f = open('%s%s.json' % (out_dir, router.name), 'w')
-            f.write(out)
-            f.close()
-        except IOError as (errno, strerror):
-            logger.error("I/O error({0}): {1}".format(errno, strerror))
-
 def main():
     # User friendly usage output
     parser = argparse.ArgumentParser()
@@ -310,6 +180,7 @@ def main():
         not_to_disk = True
     if args.O:
         out_dir = args.O
+    jsonWriter = JsonWriter(not_to_disk, out_dir)
     # Process local files
     local_sources = config.get('sources', 'local').split()
     for f in local_sources:
@@ -317,7 +188,7 @@ def main():
         if xmldoc:
             # Parse the xml document to create a Router object
             router = parse_router(xmldoc)
-            write_output(router, not_to_disk, out_dir)
+            jsonWriter.write(router)
     # Process remote hosts
     remote_sources = config.get('sources', 'remote').split()
     for host in remote_sources:
@@ -336,15 +207,15 @@ def main():
             hardware = get_remote_xml(host, config.get('ssh', 'user'),
                 config.get('ssh', 'password'), show_command)
             if hardware:
-                router_model = get_model(hardware)
                 chassis = ChassisParser().parse(hardware)
+                router_model = chassis.description
             else:
                 router_model = None
             # Parse the xml document to create a Router object
             router = parse_router(configuration, router_model, physical_interfaces)
             router.hardware = chassis
             # Write JSON
-            write_output(router, not_to_disk, out_dir)
+            jsonWriter(router)
     return 0
 
 if __name__ == '__main__':
