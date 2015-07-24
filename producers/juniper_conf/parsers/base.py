@@ -13,7 +13,7 @@ class ElementParser:
             ""
         """
         text = [ child.data for child in self.nodeTree.childNodes if child.nodeType == child.TEXT_NODE ]
-        return "".join(text)
+        return "".join(text) or None
     def first(self,tag):
         """
             Gets the first matching tag. If no tag is present an EmptyTree will be returned.

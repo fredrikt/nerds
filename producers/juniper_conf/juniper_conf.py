@@ -154,30 +154,6 @@ def get_interfaces(xmldoc, physical_interfaces=None):
             interfaces.append(tempInterface)
     return interfaces
 
-def get_bgp_peerings(xmldoc):
-    """
-    Returns a list of all BGP peerings in the JunOS configuration.
-    """
-    bgp = xmldoc.getElementsByTagName('bgp')
-    list_of_peerings = []
-    for element in bgp:
-        for group in element.getElementsByTagName('group'):
-            group_name = get_firstchild_data(group, 'name')
-            group_type = get_firstchild_data(group, 'type')
-            local_address = get_firstchild_data(group, 'local-address')
-            neighbors = group.getElementsByTagName('neighbor')
-            for neighbor in neighbors:
-                #if not neighbor.hasAttribute('inactive')
-                peering = BgpPeering()
-                peering.type = group_type
-                peering.remote_address = get_firstchild_data(neighbor, 'name')
-                peering.description = get_firstchild_data(neighbor, 'description')
-                peering.local_address = local_address
-                peering.group = group_name
-                peering.as_number = get_firstchild_data(neighbor, 'peer-as')
-                list_of_peerings.append(peering)
-    return list_of_peerings
-
 def parse_router(xmldoc, router_model=None, physical_interfaces=None):
     """
     Takes a JunOS conf in XML format and returns a Router object.
@@ -192,7 +168,7 @@ def parse_router(xmldoc, router_model=None, physical_interfaces=None):
     router.version = get_version(xmldoc)
     router.model = router_model
     router.interfaces = get_interfaces(xmldoc, physical_interfaces)
-    router.bgp_peerings = get_bgp_peerings(xmldoc)
+    router.bgp_peerings = BgpPeeringParser().parse(xmldoc)
     return router
 
 def get_physical_interfaces(xmldoc):
@@ -361,10 +337,12 @@ def main():
                 config.get('ssh', 'password'), show_command)
             if hardware:
                 router_model = get_model(hardware)
+                chassis = ChassisParser().parse(hardware)
             else:
                 router_model = None
             # Parse the xml document to create a Router object
             router = parse_router(configuration, router_model, physical_interfaces)
+            router.hardware = chassis
             # Write JSON
             write_output(router, not_to_disk, out_dir)
     return 0
