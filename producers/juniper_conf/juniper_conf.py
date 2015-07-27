@@ -24,9 +24,8 @@ import ConfigParser
 import argparse
 import logging
 from models import *
-from parsers.base import ElementParser
 from parsers import *
-from util import JsonWriter
+from util import JsonWriter, JunosRemoteSource
 
 logger = logging.getLogger('juniper_conf')
 logger.setLevel(logging.INFO)
@@ -41,42 +40,6 @@ logger.addHandler(ch)
 #
 #Depends on pexpect for remote config gathering.
 #If you have Python <2.7 you need to install argparse manually.
-
-
-def get_hostname(xmldoc):
-    """
-    Finds and returns the hostname from a JunOS config.
-    """
-    re = xmldoc.getElementsByTagName('host-name')
-    domain = xmldoc.getElementsByTagName('domain-name')
-    if re:
-        hostname = re[0].firstChild.data
-    else:
-        logger.error('Could not find host-name in the Juniper configuration.')
-        sys.exit(1)
-    if domain:
-        hostname += '.%s' % domain[0].firstChild.data
-    if 're0' in hostname or 're1' in hostname:
-        hostname = hostname.replace('-re0','').replace('-re1','')
-    return hostname
-
-def parse_router(xmldoc, router_model=None, physical_interfaces=[]):
-    """
-    Takes a JunOS conf in XML format and returns a Router object.
-    """
-    routerConf = ElementParser(xmldoc)
-    # Until we decide how we will handle logical-systems we remove them from
-    # the configuration.
-    logical_systems = xmldoc.getElementsByTagName('logical-systems')
-    for item in logical_systems:
-        item.parentNode.removeChild(item).unlink()
-    router = Router()
-    router.name = get_hostname(xmldoc)
-    router.version = routerConf.first("version").text()
-    router.model = router_model
-    router.interfaces = InterfaceParser().parse(xmldoc, physical_interfaces)
-    router.bgp_peerings = BgpPeeringParser().parse(xmldoc)
-    return router
 
 def get_physical_interfaces(xmldoc):
     """
@@ -110,55 +73,7 @@ def get_local_xml(f):
         return False
     return xmldoc
 
-def get_remote_xml(host, username, password, show_command):
-    """
-    Tries to ssh to the supplied JunOS machine and execute the command
-    to show current configuration i XML format.
-
-    Returns False if the configuration could not be retrieved.
-    """
-    try:
-        import pexpect
-    except ImportError:
-        logger.error('Install pexpect to be able to use remote sources.')
-        return False
-    ssh_newkey = 'Are you sure you want to continue connecting'
-    login_choices = [ssh_newkey, 'Password:', 'password:', pexpect.EOF]
-    try:
-        s = pexpect.spawn('ssh %s@%s' % (username,host))
-        i = s.expect(login_choices)
-        if i == 0:
-            s.sendline('yes')
-            i = s.expect(login_choices)
-        if i == 1 or i == 2:
-            s.sendline(password)
-        elif i == 3:
-            logger.error("[%s] I either got key problems or connection timeout." % host)
-            return False
-        s.expect('>', timeout=60)
-        # Send JunOS command for displaying the configuration in XML
-        # format.
-        s.sendline(show_command)
-        s.expect('</rpc-reply>', timeout=600)   # expect end of the XML
-                                                # blob
-        xml = s.before # take everything printed before last expect()
-        s.sendline('exit')
-    except pexpect.ExceptionPexpect as e:
-        logger.error('Exception in %s.' % host)
-        logger.error(str(e))
-        return False
-    xml += '</rpc-reply>' # Add the end element as pexpect steals it
-    # Remove the first line in the output which is the command sent
-    # to JunOS.
-    xml = xml.lstrip('show configuration | display xml | no-more')
-    try:
-        xmldoc = minidom.parseString(xml)
-    except minidom.ExpatError:
-        logger.error('Malformed XML input from %s.' % host)
-        return False
-    return xmldoc
-
-def main():
+def parse_args():
     # User friendly usage output
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', nargs='?',
@@ -175,11 +90,17 @@ def main():
     else:
         config = init_config(args.C)
     not_to_disk = False
-    out_dir = './json/'
+    out_dir = 'json/'
     if args.N:
         not_to_disk = True
     if args.O:
         out_dir = args.O
+
+    return config, not_to_disk, out_dir
+
+
+def main():
+    config, not_to_disk, out_dir = parse_args()
     jsonWriter = JsonWriter(not_to_disk, out_dir)
     # Process local files
     local_sources = config.get('sources', 'local').split()
@@ -187,32 +108,27 @@ def main():
         xmldoc = get_local_xml(f)
         if xmldoc:
             # Parse the xml document to create a Router object
-            router = parse_router(xmldoc)
+            router = RouterPaser().parse(xmldoc)
             jsonWriter.write(router)
     # Process remote hosts
     remote_sources = config.get('sources', 'remote').split()
+    junosRemote = JunosRemoteSource(None, config.get('ssh','user'), config.get('ssh','password'))
     for host in remote_sources:
-        show_command = 'show configuration | display xml | no-more'
-        configuration = get_remote_xml(host, config.get('ssh', 'user'),
-            config.get('ssh', 'password'), show_command)
+        junosRemote.host=host
+        configuration = junosRemote.show_configuration()
         if configuration:
-            show_command = 'show interfaces | display xml | no-more'
-            interfaces = get_remote_xml(host, config.get('ssh', 'user'),
-                config.get('ssh', 'password'), show_command)
+            interfaces = junosRemote.show_interfaces()
             if interfaces:
                 physical_interfaces = get_physical_interfaces(interfaces)
-            else:
-                physical_interfaces = None
-            show_command = 'show chassis hardware | display xml | no-more'
-            hardware = get_remote_xml(host, config.get('ssh', 'user'),
-                config.get('ssh', 'password'), show_command)
+
+            hardware = junosRemote.show_hardware()
             if hardware:
                 chassis = ChassisParser().parse(hardware)
                 router_model = chassis.description
             else:
                 router_model = None
             # Parse the xml document to create a Router object
-            router = parse_router(configuration, router_model, physical_interfaces)
+            router = RouterPaser().parse(configuration, router_model, physical_interfaces)
             router.hardware = chassis
             # Write JSON
             jsonWriter(router)

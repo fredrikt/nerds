@@ -3,7 +3,7 @@ class ElementParser:
         A Simple xml parsing helper. Wraps around xml.dom elements and allows chaining.
     """
     def __init__(self, nodeTree):
-        self.nodeTree = nodeTree
+        self.nodeTree = nodeTree or EmptyTree()
     def text(self):
         """
             Returns the text of the current node.
