@@ -1,8 +1,10 @@
 from models import Interface
-from .base import ElementParser
+from .base import ElementParser, get_hostname
+from util import logger
 
 class InterfaceParser:
     def parse(self, nodeTree, physicalInterfaces=[]):
+        host_name = get_hostname(ElementParser(nodeTree))
         interfaceNodes = [ 
                 interface for i in ElementParser(nodeTree).all("interfaces") 
                 if i.parent().tag() in ['configuration']
@@ -14,9 +16,7 @@ class InterfaceParser:
             interface.name = node.first("name").text()
             if physicalInterfaces:
                 if not interface.name in physicalInterfaces:
-                    #TODO: warning about configured IF that does not exist
-                    #logger.warn('Interface %s is configured but not found in %s.' % (tempInterface.name, get_hostname(xmldoc)))
-                    print "Interface {0} is configured but not found".format(interface.name)
+                    logger.warn("Interface {0} is configured but not found in {1}".format(interface.name, host_name))
                     continue
                 else:
                     physicalInterfaces.remove(interface.name)
@@ -24,7 +24,7 @@ class InterfaceParser:
             interface.vlantagging = len(node.all("vlan-tagging")) > 0
             interface.bundle = node.first("bundle").text()
             interface.description = node.first("description").text()
-            #TODO: tunnel dict..?
+            #TODO: tunnel dict..? Does it make sense when source/dest is empty?
             interface.tunneldict.append({
                 'source': node.first("source").text(),
                 'destination': node.first("destination").text(),

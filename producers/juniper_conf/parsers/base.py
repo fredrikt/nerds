@@ -49,3 +49,14 @@ class EmptyTree:
         self.childNodes = []
     def getElementsByTagName(self, tag):
         return []
+
+def get_hostname(doc):
+    hostname = doc.first("host-name").text()
+    domain = doc.first('domain-name').text()
+    if not hostname:
+        raise ParserError('Could not find host-name in the Juniper configuration.')
+    if domain:
+        hostname += '.{0}'.format(domain)
+    if 're0' in hostname or 're1' in hostname:
+        hostname = hostname.replace('-re0','').replace('-re1','')
+    return hostname

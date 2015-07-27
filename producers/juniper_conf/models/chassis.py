@@ -7,7 +7,7 @@ class Chassis:
     def __str__(self):
         return "<Chassis name: {0}, description: {1}, serial_number: {2}, modules: {3}>".format(self.name,self.description, self.serial_number, len(self.modules))
     def to_json(self):
-        out = vars(self)
+        out = vars(self).copy()
         out['modules'] = [m.to_json() for m in self.modules]
         return out
 
