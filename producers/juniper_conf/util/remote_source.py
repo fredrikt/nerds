@@ -29,7 +29,7 @@ class RemoteSource:
                 # Try again :)
                 i = ssh.expect(login_choices)
             if i == 1 or i == 2:
-                ssh.sendline(password)
+                ssh.sendline(self.password)
             elif i == 3:
                 logger.error("[%s] I either got key problems or connection timeout." % self.host)
                 return None
