@@ -131,7 +131,7 @@ def main():
             router = RouterPaser().parse(configuration, router_model, physical_interfaces)
             router.hardware = chassis
             # Write JSON
-            jsonWriter(router)
+            jsonWriter.write(router)
     return 0
 
 if __name__ == '__main__':
