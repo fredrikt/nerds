@@ -36,6 +36,7 @@ import sys
 import os
 import json
 import argparse
+import csv
 
 def normalize_whitespace(text):
     '''
@@ -66,7 +67,7 @@ def main():
     parser.add_argument('files', nargs='+', type=str,
                         help='Files to process.')
     parser.add_argument('-M', default='None', nargs='?',
-            help='Node meta type. [physical, logical, relation or location]')
+            help='Node meta type. [Physical, Logical, Relation or Location]')
     parser.add_argument('-O', nargs='?',
                         help='Path to output directory.')
     parser.add_argument('-D', nargs='?', default=';',
@@ -77,8 +78,8 @@ def main():
                         help='Don\'t write output to disk (JSON format).')
     args = parser.parse_args()
     
-    if args.M.lower() in ['physical', 'logical', 'relation', 'location']:
-        meta_type = args.M.lower()
+    if args.M in ['Physical', 'Logical', 'Relation', 'Location']:
+        meta_type = args.M
         nodes = []
         try:
             for f in args.files:
@@ -88,7 +89,7 @@ def main():
             print "I/O error({0}): {1}".format(errno, strerror)
     else:
         print 'Node meta type %s is not supported.' % args.M.lower()
-        print 'Please use physical, logical, relation or location.'
+        print 'Please use Physical, Logical, Relation or Location.'
         sys.exit(1)
     # Create the json output
     out = []
