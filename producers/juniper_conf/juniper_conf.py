@@ -129,7 +129,8 @@ def main():
                 router_model = None
             # Parse the xml document to create a Router object
             router = RouterPaser().parse(configuration, router_model, physical_interfaces)
-            router.hardware = chassis
+            if chassis:
+                router.hardware = chassis
             # Write JSON
             jsonWriter.write(router)
     return 0
