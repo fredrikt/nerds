@@ -18,7 +18,7 @@
     [rsyslog]
     cmd = find /var/log/rsyslog/ -maxdepth 1 -mmin -1440 -type d -exec basename "{}" \;
     convert = to_list
-    list_key = "hosts"
+    list_key = hosts
 
     [mem_info]
     name = memory_info
@@ -30,10 +30,7 @@
     cmd = something_that_outputs_csv_lines
     convert = csv_lines
     header = name ip other_attribute
-
-    [json]
-    cmd = something_that_outputs_json
-    convert = json
+    host_key = name
 
 ### Template examples
 

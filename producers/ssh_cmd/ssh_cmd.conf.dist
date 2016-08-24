@@ -1,0 +1,6 @@
+[base_conf]
+hosts = syslog.example.org
+
+[syslog]
+cmd = find /var/log/rsyslog/ -maxdepth 1 -mmin -1440 -type d -exec basename "{}" \;
+convert = line_to_host
