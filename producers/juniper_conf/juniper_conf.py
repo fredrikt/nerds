@@ -120,6 +120,8 @@ def main():
             interfaces = junosRemote.show_interfaces()
             if interfaces:
                 physical_interfaces = get_physical_interfaces(interfaces)
+            else:
+                physical_interfaces = []
 
             hardware = junosRemote.show_hardware()
             if hardware:
