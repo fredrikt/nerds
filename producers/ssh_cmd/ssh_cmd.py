@@ -2,7 +2,16 @@ from fabric.api import run, settings, env, quiet, hosts
 from cli import cli, load_config
 from file import template, merge_nerds_file, save_to_json
 import converters
+import logging
 
+
+logger = logging.getLogger('ssh_cmd')
+logger.setLevel(logging.INFO)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 # Would be nice to use hosts list instead of host_string...
 def ssh_cmd(host, cmd, options={}):
@@ -38,14 +47,17 @@ def main(producers, config, args):
     for producer in producers:
         hosts = config.get(producer, 'hosts', base_hosts).split()
         for host in hosts:
-            producer_conf = config.get_section(producer)
-            cmd = config.get(producer, 'cmd')
+            try:
+                producer_conf = config.get_section(producer)
+                cmd = config.get(producer, 'cmd')
 
-            lines = ssh_cmd(host, cmd).splitlines()
-            result = handle_convert(host, lines, producer_conf, producer)
-            # output result
-            for nerds in result:
-                save_to_json(nerds, args.out)
+                lines = ssh_cmd(host, cmd).splitlines()
+                result = handle_convert(host, lines, producer_conf, producer)
+                # output result
+                for nerds in result:
+                    save_to_json(nerds, args.out)
+            except Exception as e:
+                logger.error( "Producer '{}' on host '{}' failed with message: {}".format(producer, host, e))
 
 
 if __name__ == '__main__':
