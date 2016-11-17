@@ -21,9 +21,9 @@ class RemoteSource:
         login_choices = [ssh_newkey, 'Password:', 'password:', pexpect.EOF, "--- JUNOS", "Ubuntu"]
 
         try:
-            ssh_cmd = 'ssh {user}@{host}'.format(user = self.username, host=self.host)
+            ssh_cmd = 'ssh -o ConnectTimeout=10 {user}@{host}'.format(user = self.username, host=self.host)
             ssh = pexpect.spawn(ssh_cmd)
-            i = ssh.expect(login_choices, timeout=60)
+            i = ssh.expect(login_choices, timeout=12)
             if i == 0:
                 ssh.sendline('yes')
                 # Try again :)
@@ -41,6 +41,8 @@ class RemoteSource:
             xml = ssh.before # take everything printed before last expect()
             ssh.sendline('exit')
         except pexpect.ExceptionPexpect as e:
+            msg = e.message.splitlines()[0]
+            logger.error('[{}] unable to send command - error: {}'.format(self.host, msg))
             return None
 
         xml += '</rpc-reply>' # Add the end element as pexpect steals it
