@@ -1,0 +1,5 @@
+
+[api]
+api_key=
+url=http://localhost/nagiosxi/api/v1
+
