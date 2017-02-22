@@ -125,7 +125,7 @@ def init_config(path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-o', '--out-dir', default='./json/', nargs='?', help='Path to output directory.')
+    parser.add_argument('-O', '--out-dir', default='./json/', nargs='?', help='Path to output directory.')
     parser.add_argument('-n', '--dry-run', action='store_true', default=False, help='Print output to  std-out.')
     parser.add_argument('-C', nargs='?', help='Path to configuration file')
     args = parser.parse_args()
