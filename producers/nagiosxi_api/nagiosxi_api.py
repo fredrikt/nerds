@@ -38,10 +38,17 @@ MAPPING = {
 
 
 def only_fields(_dict, keys=COLUMNS, rename=MAPPING):
+    """
+    Extracts desired keys from a new dict.
+    Allows renaming keys.
+    """
     return {rename.get(key, key): _dict.get(key) for key in keys}
 
 
 def nerds_base(host_name, host_address, host_alias):
+    """
+    Nerds default structure.
+    """
     return {
         'host': {
             'name': host_name,
@@ -57,6 +64,9 @@ def nerds_base(host_name, host_address, host_alias):
 
 
 def nerds_format(services):
+    """
+    Restructures nagios data to nerds format.
+    """
     _dict = {}
     for service in services:
         host_name = service.pop('host_name')
@@ -70,6 +80,9 @@ def nerds_format(services):
 
 
 def produce(conf, dry_run, out_dir):
+    """
+    Gets service status from nagios api and converts it to nerds.
+    """
     base_url = conf.get('api', 'url')
     api_key = conf.get('api', 'api_key')
 
@@ -86,6 +99,9 @@ def produce(conf, dry_run, out_dir):
 
 
 def write_json(nerds_dict, dry_run=False, out_dir='./json'):
+    """
+    Outputs nerds dict as json to either a file or std out.
+    """
     if dry_run:
         print json.dumps(nerds_dict, sort_keys=True, indent=4)
     else:
