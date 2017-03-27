@@ -45,16 +45,21 @@ def nerds_format(host, data):
     """
     if data['scan']:
         host_data = data['scan'][host]
+        if 'hostname' in host_data:
+            hostnames = [ host_data['hostname'] ]
+        else:
+            hostnames = [ h['name'] for h in host_data['hostnames']]
+            
         nerds_format = {
             'host': {
-                'name': host_data['hostname'],
+                'name': hostnames[0],
                 'version': 1,
                 'nmap_services_py': None
             }
         }
         nmap_services_py = {
             'addresses': [host],
-            'hostnames': [host_data['hostname']],
+            'hostnames': hostnames,
             'os': {},
             'services': {
                 host: {}
@@ -82,9 +87,9 @@ def nerds_format(host, data):
             nmap_services_py['services'][host]['sctp'] = host_data['sctp']
         # os
         if 'osclass' in host_data:
-            nmap_services_py['os']['class'] = host_data['osclass'][0]
+            nmap_services_py['os']['class'] = first(host_data['osclass'])
         if 'osmatch' in host_data:
-            nmap_services_py['os']['match'] = host_data['osmatch'][0]
+            nmap_services_py['os']['match'] = first(host_data['osmatch'])
         nerds_format['host']['nmap_services_py'] = nmap_services_py
         if VERBOSE:
             logger.info('Finished processing %s (%s).' % (nerds_format['host']['name'], host))
@@ -92,6 +97,14 @@ def nerds_format(host, data):
     else:
         return None
 
+def first(what):
+    if isinstance(what, list):
+        if len(what) > 0:
+            return what[0]
+        else:
+            return None
+    else:
+        return what
 
 def merge_nmap_services(d1, d2):
     """
