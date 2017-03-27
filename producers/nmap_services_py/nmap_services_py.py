@@ -171,7 +171,8 @@ def main():
     nmap_arguments = '-PE -sV -O --osscan-guess'
     scanners = []
     if args.target:
-        scanners.append(scan(args.target, nmap_arguments, output_arguments))
+        ports = None
+        scanners.append(scan(args.target, nmap_arguments, ports, output_arguments))
     elif args.list:
         for target in args.list:
             if not args.known:
