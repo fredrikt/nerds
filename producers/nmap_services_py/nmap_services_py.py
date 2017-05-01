@@ -43,13 +43,13 @@ def nerds_format(host, data):
     """
     Transform the nmap output to the NERDS format.
     """
-    if data['scan']:
+    if data and data.get('scan'):
         host_data = data['scan'][host]
         if 'hostname' in host_data:
-            hostnames = [ host_data['hostname'] ]
+            hostnames = [host_data['hostname']]
         else:
-            hostnames = [ h['name'] for h in host_data['hostnames']]
-            
+            hostnames = [h['name'] for h in host_data['hostnames']]
+
         nerds_format = {
             'host': {
                 'name': hostnames[0],
@@ -97,6 +97,7 @@ def nerds_format(host, data):
     else:
         return None
 
+
 def first(what):
     if isinstance(what, list):
         if len(what) > 0:
@@ -105,6 +106,7 @@ def first(what):
             return None
     else:
         return what
+
 
 def merge_nmap_services(d1, d2):
     """
@@ -133,7 +135,7 @@ def output(d, out_dir, no_write=False):
             out_dir += '/'
         try:
             try:
-                #TODO: check if the merge will collide with writing host files...
+                # TODO: check if the merge will collide with writing host files...
                 if os.path.exists('%s%s.json' % (out_dir, d['host']['name'])):
                     f = open('%s%s.json' % (out_dir, d['host']['name']))
                     try:
