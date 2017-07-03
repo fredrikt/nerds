@@ -67,9 +67,9 @@ def nerds_format(host, data):
         }
         # name
         if not nerds_format['host']['name']:
-            if 'osmatch' in host_data:
+            try:
                 os_match = host_data['osmatch'][0].get('name', 'Unknown')
-            else:
+            except:
                 os_match = 'Unknown'
             logger.warn('Host %s not in DNS. OS match: %s' % (host, os_match))
             return None
