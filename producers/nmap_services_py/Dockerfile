@@ -1,4 +1,4 @@
-FROM alpine:3.5
+FROM alpine:3.6
 MAINTAINER Markus Krogh <markus@nordu.net>
 RUN apk add --no-cache ca-certificates python2 py2-pip
 RUN pip install --upgrade pip
