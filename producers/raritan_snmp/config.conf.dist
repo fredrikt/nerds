@@ -1,6 +1,6 @@
-# Copyright 2010, NORDUnet A/S.
+# Copyright 2017, NORDUnet A/S.
 #
-# This file is part of the NERDS producer juniper_conf.py.
+# This file is part of the NERDS producer raritan_snmp.py.
 #
 # NORDUbot is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
