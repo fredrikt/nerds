@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 
 import argparse
-import ConfigParser
+from configparser import SafeConfigParser
 import logging
 import requests
 import os
 import json
+import sys
+sys.path.append('../')
+
+from utils.file import save_to_json
+from utils.nerds import to_nerds
 
 logger = logging.getLogger('checkmk_livestatus')
 logger.setLevel(logging.DEBUG)
@@ -34,7 +39,7 @@ MAPPING = {
     'name': 'description',
     'status_text': 'plugin_output',
     'performance_data': 'perf_data',
-    }
+}
 
 
 def only_fields(_dict, keys=COLUMNS, rename=MAPPING):
@@ -49,18 +54,12 @@ def nerds_base(host_name, host_address, host_alias):
     """
     Nerds default structure.
     """
-    return {
-        'host': {
-            'name': host_name,
-            'version': '1',
-            'nagiosxi_api': {
-                'host_name': host_name,  # why repeat?
-                'host_alias': host_alias,
-                'host_address': host_address,
-                'checks': [],
-            }
-        }
-    }
+    return to_nerds(host_name, 'nagiosxi_api', {
+        'host_name': host_name,  # why repeat?
+        'host_alias': host_alias,
+        'host_address': host_address,
+        'checks': [],
+    })
 
 
 def nerds_format(services):
@@ -103,12 +102,9 @@ def write_json(nerds_dict, dry_run=False, out_dir='./json'):
     Outputs nerds dict as json to either a file or std out.
     """
     if dry_run:
-        print json.dumps(nerds_dict, sort_keys=True, indent=4)
+        print(json.dumps(nerds_dict, sort_keys=True, indent=4))
     else:
-        file_name = '{}.json'.format(nerds_dict['host']['name'])
-        path = os.path.join(out_dir, file_name)
-        with open(path, 'w') as f:
-            json.dump(nerds_dict, f, sort_keys=True, indent=4)
+        save_to_json(nerds_dict, out_dir)
 
 
 def init_config(path):
@@ -116,11 +112,11 @@ def init_config(path):
     Initializes the configuration file located in the path provided.
     """
     try:
-        config = ConfigParser.SafeConfigParser()
+        config = SafeConfigParser()
         config.read(path)
         return config
-    except IOError as (errno, strerror):
-        logger.error('I/O error({0}): {1}'.format(errno, strerror))
+    except IOError as e:
+        logger.error('I/O error: %s', e)
 
 
 def main():

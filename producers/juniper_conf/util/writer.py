@@ -11,7 +11,7 @@ class JsonWriter:
     def write(self, router):
         template =  {'host':
                         {
-                        'name': router.name,
+                        'name': router.name.lower(),
                          'version': 1,
                          'juniper_conf': router.to_json()
                         }
@@ -20,7 +20,7 @@ class JsonWriter:
         if self.dry_run:
              print out
         else:
-            self.write_to_file(out, router.name)
+            self.write_to_file(out, router.name.lower())
 
     def write_to_file(self,out, name):
         path = os.path.join(self.out_dir, name+".json")
