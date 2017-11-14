@@ -2,6 +2,7 @@ from models import Interface
 from .base import ElementParser, get_hostname
 from util import logger
 
+
 class InterfaceParser:
     def parse(self, nodeTree, physicalInterfaces=[]):
         host_name = get_hostname(ElementParser(nodeTree))

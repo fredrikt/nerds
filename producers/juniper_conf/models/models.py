@@ -1,4 +1,5 @@
-from .chassis import *
+from .chassis import Chassis, ChassisModule
+
 
 class Router:
     def __init__(self):
@@ -16,6 +17,7 @@ class Router:
         if self.hardware:
             j['hardware'] = self.hardware.to_json()
         return j
+
 
 class Interface:
     def __init__(self):
@@ -42,6 +44,7 @@ class Interface:
         }
         return j
 
+
 class BgpPeering:
     def __init__(self):
         self.type = None
@@ -54,4 +57,3 @@ class BgpPeering:
     def to_json(self):
         j = vars(self).copy()
         return j
-
