@@ -24,6 +24,7 @@ class Interface:
         self.description = ''
         self.vlantagging = ''
         self.tunneldict = []
+        self.inactive = False
         # Unit dict is a list of dictionaries containing units to
         # interfaces, should be index like {'unit': 'name',
         # 'description': 'foo', 'vlanid': 'bar', 'address': 'xyz'}
@@ -36,7 +37,8 @@ class Interface:
             'description': self.description,
             'vlantagging': self.vlantagging,
             'tunnels': self.tunneldict,
-            'units': self.unitdict
+            'units': self.unitdict,
+            'inactive': self.inactive,
         }
         return j
 

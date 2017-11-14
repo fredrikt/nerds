@@ -214,6 +214,58 @@
                         </family>
                     </unit>
                 </interface>
+                <interface inactive="inactive"> 
+                    <name>ae4</name> 
+                    <description>yay test</description> 
+                    <vlan-tagging/> 
+                    <mtu>9192</mtu> 
+                    <encapsulation>flexible-ethernet-services</encapsulation> 
+                    <aggregated-ether-options> 
+                        <minimum-links>2</minimum-links> 
+                        <link-speed>10g</link-speed> 
+                        <lacp> 
+                            <active/> 
+                            <periodic>fast</periodic> 
+                        </lacp> 
+                    </aggregated-ether-options> 
+                    <unit inactive="inactive"> 
+                        <name>100</name> 
+                        <description>test2</description> 
+                        <vlan-id>100</vlan-id> 
+                        <family inactive="inactive"> 
+                            <inet> 
+                                <filter> 
+                                    <input> 
+                                        <filter-name>sample</filter-name> 
+                                    </input> 
+                                </filter> 
+                                <address> 
+                                    <name>192.168.213.206/30</name> 
+                                </address> 
+                            </inet> 
+                            <inet6> 
+                                <filter> 
+                                    <input> 
+                                        <filter-name>sample-v6</filter-name> 
+                                    </input> 
+                                </filter> 
+                                <address> 
+                                    <name>fe62::235:1500:1166:c87c/126</name> 
+                                </address> 
+                            </inet6> 
+                        </family> 
+                    </unit> 
+                    <unit> 
+                        <name>120</name> 
+                        <description>test2</description> 
+                        <encapsulation>vlan-ccc</encapsulation> 
+                        <vlan-id>120</vlan-id> 
+                        <family> 
+                            <ccc> 
+                            </ccc> 
+                        </family> 
+                    </unit> 
+								</interface>
             </interfaces>
             <protocols>
                 <bgp>

@@ -40,6 +40,11 @@ class ElementParser:
             Returns current tag name.
         """
         return self.nodeTree.tagName
+    def attr(self, key, default=None):
+        """
+            Returns attribute with specified key or default
+        """
+        return self.nodeTree.getAttribute(key) or default
 
 class EmptyTree:
     """
