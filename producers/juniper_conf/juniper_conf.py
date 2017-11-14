@@ -20,7 +20,7 @@
 
 from xml.dom import minidom
 import sys
-import ConfigParser
+from configparser import SafeConfigParser
 import argparse
 import logging
 from models import *
@@ -53,11 +53,11 @@ def init_config(path):
     Initializes the configuration file located in the path provided.
     """
     try:
-       config = ConfigParser.SafeConfigParser()
+       config = SafeConfigParser()
        config.read(path)
        return config
-    except IOError as (errno, strerror):
-        logger.error("I/O error({0}): {1}".format(errno, strerror))
+    except IOError as e:
+        logger.error("I/O error: %s", e)
 
 def get_local_xml(f):
     """

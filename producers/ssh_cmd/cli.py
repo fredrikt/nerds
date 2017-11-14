@@ -23,7 +23,7 @@ class DefaultConf(object):
 def cli():
     parser = argparse.ArgumentParser(description='SSH command producer.')
     parser.add_argument('--config', '-C', required=True, help='a configuration file')
-    parser.add_argument('--out', '-O', default='.', help='an output directory')
+    parser.add_argument('--out', '-O', default='./json', help='an output directory')
     return parser.parse_args()
 
 def load_config(filepath):

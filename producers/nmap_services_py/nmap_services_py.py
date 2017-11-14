@@ -1,12 +1,15 @@
 #!/usr/bin/env python2.7
 
 import argparse
-import os
 import json
 import nmap
 import logging
 import time
 import gc
+import sys
+sys.path.append('../')
+from utils.file import save_to_json
+from utils.nerds import to_nerds
 
 logger = logging.getLogger('nmap_services_py')
 logger.setLevel(logging.INFO)
@@ -50,13 +53,6 @@ def nerds_format(host, data):
         else:
             hostnames = [h['name'] for h in host_data['hostnames']]
 
-        nerds_format = {
-            'host': {
-                'name': hostnames[0],
-                'version': 1,
-                'nmap_services_py': None
-            }
-        }
         nmap_services_py = {
             'addresses': [host],
             'hostnames': hostnames,
@@ -65,13 +61,7 @@ def nerds_format(host, data):
                 host: {}
             }
         }
-        # name
-        if not nerds_format['host']['name']:
-            try:
-                os_match = host_data['osmatch'][0].get('name', 'Unknown')
-            except:
-                os_match = 'Unknown'
-            logger.warn('Host %s not in DNS. OS match: %s' % (host, os_match))
+        if not hostnames:
             return None
         # uptime
         if 'uptime' in host_data:
@@ -90,10 +80,7 @@ def nerds_format(host, data):
             nmap_services_py['os']['class'] = first(host_data['osclass'])
         if 'osmatch' in host_data:
             nmap_services_py['os']['match'] = first(host_data['osmatch'])
-        nerds_format['host']['nmap_services_py'] = nmap_services_py
-        if VERBOSE:
-            logger.info('Finished processing %s (%s).' % (nerds_format['host']['name'], host))
-        return nerds_format
+        return to_nerds(hostnames[0], 'nmap_services_py', nmap_services_py)
     else:
         return None
 
@@ -129,31 +116,9 @@ def merge_nmap_services(d1, d2):
 
 def output(d, out_dir, no_write=False):
     if no_write:
-        print json.dumps(d, sort_keys=True, indent=4)
+        print(json.dumps(d, sort_keys=True, indent=4))
     else:
-        if out_dir[-1] != '/':  # Pad with / if user provides a broken path
-            out_dir += '/'
-        try:
-            try:
-                # TODO: check if the merge will collide with writing host files...
-                if os.path.exists('%s%s.json' % (out_dir, d['host']['name'])):
-                    f = open('%s%s.json' % (out_dir, d['host']['name']))
-                    try:
-                        d = merge_nmap_services(d, json.load(f))
-                    except ValueError:
-                        # Previous file was damaged on some way, ignore it.
-                        pass
-                    f.close()
-                f = open('%s%s.json' % (out_dir, d['host']['name']), 'w')
-            except IOError:
-                os.mkdir(out_dir)  # The directory to write in might not exist
-                f = open('%s%s.json' % (out_dir, d['host']['name']), 'w')
-            f.write(json.dumps(d, sort_keys=True, indent=4))
-            f.close()
-            if VERBOSE:
-                logger.info('%s written.' % f.name)
-        except IOError as (errno, strerror):
-            print "I/O error({0}): {1}".format(errno, strerror)
+        save_to_json(d, out_dir, merge_nmap_services)
 
 
 def main():
@@ -183,7 +148,8 @@ def main():
         'out_dir': args.O,
         'no_write': args.N
     }
-    nmap_arguments = '-PE -sV -O --osscan-guess --host-timeout 10m'
+    nmap_arguments = '-PE -sV -sS -sU -O --osscan-guess --host-timeout 10m'
+    #nmap_arguments = '-PE -sV --host-timeout 10m'
     scanners = []
     if args.target:
         ports = None
@@ -199,6 +165,7 @@ def main():
                     # http://nmap.org/book/man-port-specification.html
                     target, ports = target.strip().split()
                     nmap_arguments = '-PE -sV -sS -sU -O --osscan-guess --host-timeout 10m'
+                    #nmap_arguments = '-PE -sV --host-timeout 10m'
                 except ValueError:
                     logger.error('Could not make sense of "%s".' % target)
                     logger.info('Line should match "address U:X,X,T:X-X,X"')

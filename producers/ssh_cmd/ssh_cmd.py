@@ -1,8 +1,11 @@
 from fabric.api import run, settings, env, quiet, hosts
 from cli import cli, load_config
-from file import template, merge_nerds_file, save_to_json
+from file import template
 import converters
 import logging
+import sys
+sys.path.append('../')
+from utils.file import save_to_json 
 
 
 logger = logging.getLogger('ssh_cmd')
