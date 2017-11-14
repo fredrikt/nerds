@@ -22,8 +22,9 @@ class ChassisParserTest(unittest.TestCase):
         self.assertEqual(module.serial_number, "xxxxx1")
         self.assertEqual(module.description, "T640 Backplane")
         self.assertEqual(module.model_number, "CHAS-BP-T640-S")
+
     def test_sub_modules(self):
-        module = [m for m in self.chassis.modules if m.name=="FPC 0"][0]
+        module = [m for m in self.chassis.modules if m.name == "FPC 0"][0]
 
         self.assertEqual(module.name, "FPC 0")
         self.assertEqual(module.version, "REV 02")
@@ -33,9 +34,10 @@ class ChassisParserTest(unittest.TestCase):
         self.assertEqual(module.clei_code, "FPCSWEETOK")
         self.assertEqual(module.model_number, "T4000-FPC5-3D")
         self.assertEqual(len(module.sub_modules), 2)
+
     def test_subsub_modules(self):
-        fpc = [m for m in self.chassis.modules if m.name=="FPC 0"][0]
-        module = [m for m in fpc.sub_modules if m.name=="PIC 0"][0]
+        fpc = [m for m in self.chassis.modules if m.name == "FPC 0"][0]
+        module = [m for m in fpc.sub_modules if m.name == "PIC 0"][0]
 
         self.assertEqual(module.name, "PIC 0")
         self.assertEqual(module.version, "REV 17")
@@ -52,4 +54,3 @@ class ChassisParserTest(unittest.TestCase):
         self.assertEqual(sub_module.part_number, "777-777777")
         self.assertEqual(sub_module.serial_number, "xxxxxx7")
         self.assertEqual(sub_module.description, "SFP+-10G-LR")
-

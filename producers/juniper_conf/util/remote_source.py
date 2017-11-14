@@ -82,4 +82,3 @@ class JunosRemoteSource(RemoteSource):
 
     def show_hardware(self):
         return self.send_command("show chassis hardware | display xml | no-more")
-

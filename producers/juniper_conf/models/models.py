@@ -1,6 +1,3 @@
-from .chassis import Chassis, ChassisModule
-
-
 class Router:
     def __init__(self):
         self.name = ''

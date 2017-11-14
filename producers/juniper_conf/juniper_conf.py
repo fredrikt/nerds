@@ -23,8 +23,7 @@ import sys
 from configparser import SafeConfigParser
 import argparse
 import logging
-from models import *
-from parsers import *
+from parsers import ElementParser, RouterPaser, ChassisParser
 from util import JsonWriter, JunosRemoteSource
 
 logger = logging.getLogger('juniper_conf')
@@ -35,29 +34,32 @@ formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
-#JUNOS configuration producer written for the NERDS project
-#(http://github.com/fredrikt/nerds/).
+# JUNOS configuration producer written for the NERDS project
+# (http://github.com/fredrikt/nerds/).
 #
-#Depends on pexpect for remote config gathering.
-#If you have Python <2.7 you need to install argparse manually.
+# Depends on pexpect for remote config gathering.
+# If you have Python <2.7 you need to install argparse manually.
+
 
 def get_physical_interfaces(xmldoc):
     """
     Takes the output of "show interfaces" and creates a list of interface names that
     are physically in the router.
     """
-    return [ p.first("name").text() for p in ElementParser(xmldoc).all("physical-interfaces") ]
+    return [p.first("name").text() for p in ElementParser(xmldoc).all("physical-interfaces")]
+
 
 def init_config(path):
     """
     Initializes the configuration file located in the path provided.
     """
     try:
-       config = SafeConfigParser()
-       config.read(path)
-       return config
+        config = SafeConfigParser()
+        config.read(path)
+        return config
     except IOError as e:
         logger.error("I/O error: %s", e)
+
 
 def get_local_xml(f):
     """
@@ -73,14 +75,21 @@ def get_local_xml(f):
         return False
     return xmldoc
 
+
 def parse_args():
     # User friendly usage output
     parser = argparse.ArgumentParser()
-    parser.add_argument('-C', nargs='?',
+    parser.add_argument(
+        '-C',
+        nargs='?',
         help='Path to the configuration file.')
-    parser.add_argument('-O', nargs='?',
+    parser.add_argument(
+        '-O',
+        nargs='?',
         help='Path to output directory.')
-    parser.add_argument('-N', action='store_true',
+    parser.add_argument(
+        '-N',
+        action='store_true',
         help='Don\'t write output to disk.')
     args = parser.parse_args()
     # Load the configuration file
@@ -112,9 +121,9 @@ def main():
             jsonWriter.write(router)
     # Process remote hosts
     remote_sources = config.get('sources', 'remote').split()
-    junosRemote = JunosRemoteSource(None, config.get('ssh','user'), config.get('ssh','password'))
+    junosRemote = JunosRemoteSource(None, config.get('ssh', 'user'), config.get('ssh', 'password'))
     for host in remote_sources:
-        junosRemote.host=host
+        junosRemote.host = host
         configuration = junosRemote.show_configuration()
         if configuration:
             interfaces = junosRemote.show_interfaces()
@@ -137,6 +146,6 @@ def main():
             jsonWriter.write(router)
     return 0
 
+
 if __name__ == '__main__':
     main()
-
