@@ -1,6 +1,8 @@
 from xml.dom import minidom
 from .interfaces import InterfaceParser
 import unittest
+import json
+
 
 class InterfaceParserTest(unittest.TestCase):
     def setUp(self):
@@ -8,12 +10,13 @@ class InterfaceParserTest(unittest.TestCase):
         self.interfaces = InterfaceParser().parse(self.xml)
 
     def test_basic(self):
-        self.assertEqual(len(self.interfaces),5)
-        self.contains(lambda i: i.vlantagging )
-        self.contains(lambda i: i.name == "xe-0/0/0" )
+        self.assertEqual(len(self.interfaces), 6)
+        self.contains(lambda i: i.vlantagging)
+        self.contains(lambda i: i.name == "xe-0/0/0")
         i = [i for i in self.interfaces if i.name == "xe-0/0/0"][0]
         self.assertTrue(i.vlantagging)
         self.assertEqual(i.description, "patch to sw-test-sw-02, se-tug.se-test-sw-02")
+        self.assertFalse(i.inactive)
         self.assertEqual(len(i.unitdict), 3)
         unit = i.unitdict[0]
         self.assertEqual(unit['unit'], "101")
@@ -21,6 +24,7 @@ class InterfaceParserTest(unittest.TestCase):
         self.assertEqual(unit['description'], "ndn-test-l3")
         self.assertIn("192.168.1.45/30", unit['address'])
         self.assertIn("fc00:289:3:b::1/64", unit['address'])
+        self.assertEqual(unit['inactive'], False)
 
         unit = i.unitdict[2]
         self.assertEqual(unit['unit'], "202")
@@ -42,16 +46,16 @@ class InterfaceParserTest(unittest.TestCase):
         self.contains(lambda i: i.name == "3fe")
 
     def test_with_physical(self):
-        physical_interface= ["xe-0/0/0","xe-0/0/1","xe-0/0/3","xe-0/0/4", "3fe", "whoooot"]
+        physical_interface = ["xe-0/0/0", "xe-0/0/1", "xe-0/0/3", "xe-0/0/4", "3fe", "whoooot", "ae4"]
         self.interfaces = InterfaceParser().parse(self.xml, physical_interface)
-        self.assertEqual(len(self.interfaces),6)
+        self.assertEqual(len(self.interfaces), 7)
         self.contains(lambda i: i.name == "whoooot")
 
     def contains(self, fn):
-        result = [ i for i in self.interfaces if fn(i)]
+        result = [i for i in self.interfaces if fn(i)]
         self.assertTrue(len(result) > 0, "Expected at least one matching interface")
+
     def list_all(self):
-        import json
-        print "Interfaces:"
+        print("Interfaces:")
         for i in self.interfaces:
-            print json.dumps(i.to_json(), indent=2)
+            print(json.dumps(i.to_json(), indent=2))

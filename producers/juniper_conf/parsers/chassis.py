@@ -1,6 +1,7 @@
 from .base import ElementParser
 from models.chassis import Chassis, ChassisModule
 
+
 class ChassisParser:
     """
         Parses an xml node tree into a Chassis object.
@@ -11,6 +12,7 @@ class ChassisParser:
         """
         chassisNode = ElementParser(nodeTree).first("chassis")
         return self._create_chassis(chassisNode)
+
     def parseAll(self, nodeTree):
         return [self._create_chassis(n) for n in ElementParser(nodeTree).all("chassis")]
 
@@ -39,6 +41,8 @@ class ChassisParser:
         module.model_number = node.first("model-number").text()
         module.clei_code = node.first("clei-code").text()
         module.clei_code = node.first("clei-code").text()
-        module.sub_modules = [ self._create_module(ElementParser(c))
-                for c in node.nodeTree.childNodes if "-module" in c.nodeName ]
+        module.sub_modules = [
+            self._create_module(ElementParser(c))
+            for c in node.nodeTree.childNodes if "-module" in c.nodeName
+        ]
         return module

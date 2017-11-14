@@ -1,5 +1,3 @@
-from .chassis import *
-
 class Router:
     def __init__(self):
         self.name = ''
@@ -17,6 +15,7 @@ class Router:
             j['hardware'] = self.hardware.to_json()
         return j
 
+
 class Interface:
     def __init__(self):
         self.name = ''
@@ -24,6 +23,7 @@ class Interface:
         self.description = ''
         self.vlantagging = ''
         self.tunneldict = []
+        self.inactive = False
         # Unit dict is a list of dictionaries containing units to
         # interfaces, should be index like {'unit': 'name',
         # 'description': 'foo', 'vlanid': 'bar', 'address': 'xyz'}
@@ -36,9 +36,11 @@ class Interface:
             'description': self.description,
             'vlantagging': self.vlantagging,
             'tunnels': self.tunneldict,
-            'units': self.unitdict
+            'units': self.unitdict,
+            'inactive': self.inactive,
         }
         return j
+
 
 class BgpPeering:
     def __init__(self):
@@ -52,4 +54,3 @@ class BgpPeering:
     def to_json(self):
         j = vars(self).copy()
         return j
-

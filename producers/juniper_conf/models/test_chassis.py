@@ -1,6 +1,7 @@
 from .chassis import Chassis, ChassisModule
 import unittest
 
+
 class ChassisTest(unittest.TestCase):
 
     def setUp(self):
@@ -10,8 +11,8 @@ class ChassisTest(unittest.TestCase):
         chassis.description = "Awesome chassis"
 
         module = ChassisModule()
-        module.name="module"
-        module.part_number="part1"
+        module.name = "module"
+        module.part_number = "part1"
         chassis.modules = [module]
         self.chassis = chassis
 
@@ -31,25 +32,26 @@ class ChassisTest(unittest.TestCase):
         self.assertEqual(json_dict['name'], "New name")
         self.assertEqual(self.chassis.name, "Test")
 
+
 class ChassisModuleTest(unittest.TestCase):
     def setUp(self):
         module = ChassisModule()
-        module.name="FPC"
-        module.version="REV 02"
-        module.part_number="part1"
-        module.description="Sweet module"
-        module.model_number="FPC-1-D"
-        module.clei_code="1234567890"
+        module.name = "FPC"
+        module.version = "REV 02"
+        module.part_number = "part1"
+        module.description = "Sweet module"
+        module.model_number = "FPC-1-D"
+        module.clei_code = "1234567890"
 
         submod = ChassisModule()
-        submod.name="PIC 0"
-        submod.version="REV 13"
-        submod.part_number="772-TEST"
-        submod.serial_number="SOMEID1"
-        submod.description="SNG PMB"
+        submod.name = "PIC 0"
+        submod.version = "REV 13"
+        submod.part_number = "772-TEST"
+        submod.serial_number = "SOMEID1"
+        submod.description = "SNG PMB"
 
         subsubmod = ChassisModule()
-        subsubmod.name="Xcvr 0"
+        subsubmod.name = "Xcvr 0"
 
         submod.sub_modules.append(subsubmod)
 
@@ -65,7 +67,7 @@ class ChassisModuleTest(unittest.TestCase):
         self.assertEqual(jmod['model_number'], "FPC-1-D")
         self.assertEqual(jmod['clei_code'], "1234567890")
         self.assertEqual(len(jmod['sub_modules']), 1)
-        
+
         submod = jmod['sub_modules'][0]
         self.assertEqual(submod['name'], "PIC 0")
         self.assertEqual(submod['version'], "REV 13")
@@ -75,7 +77,7 @@ class ChassisModuleTest(unittest.TestCase):
 
         self.assertEqual(len(submod['sub_modules']), 1)
         self.assertEqual(submod['sub_modules'][0]['name'], "Xcvr 0")
-    
+
     def test_to_json_safe(self):
         jmod = self.module.to_json()
         jmod['name'] = "other name"

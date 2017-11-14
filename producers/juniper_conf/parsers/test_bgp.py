@@ -2,6 +2,7 @@ from xml.dom import minidom
 from .bgp import BgpPeeringParser
 import unittest
 
+
 class BgpParserTest(unittest.TestCase):
     def setUp(self):
         xml = minidom.parse("parsers/test_show_config.xml")
@@ -18,7 +19,7 @@ class BgpParserTest(unittest.TestCase):
         self.assertIsNone(esport[0].local_address)
 
     def test_internal(self):
-        internal = [ p for p in self.bgp_peerings if p.type == 'internal']
+        internal = [p for p in self.bgp_peerings if p.type == 'internal']
         self.assertEqual(len(internal), 6)
         self.assertEqual(internal[0].local_address, "192.168.67.1")
         self.assertEqual(internal[0].remote_address, "192.168.67.3")
@@ -26,9 +27,8 @@ class BgpParserTest(unittest.TestCase):
         self.assertIsNone(internal[0].description)
         self.assertIsNone(internal[0].as_number)
 
-    
     def test_external_ipv6(self):
-        ipv6 = [ p for p in self.bgp_peerings if p.group == 'PNI-v6']
+        ipv6 = [p for p in self.bgp_peerings if p.group == 'PNI-v6']
         self.assertEqual(len(ipv6), 3)
         self.assertEqual(ipv6[0].type, "external")
         self.assertEqual(ipv6[0].remote_address, "fd83:456:0:f008:0:0:0:3")
@@ -37,11 +37,10 @@ class BgpParserTest(unittest.TestCase):
         self.assertIsNone(ipv6[0].local_address)
 
     def test_internal_ipv6(self):
-        ipv6 = [ p for p in self.bgp_peerings if p.group == 'NORDUnetIPv6']
+        ipv6 = [p for p in self.bgp_peerings if p.group == 'NORDUnetIPv6']
         self.assertEqual(len(ipv6), 2)
         self.assertEqual(ipv6[0].local_address, "fc39:248:0:fa7:beef::1")
         self.assertEqual(ipv6[0].remote_address, "fc39:248:0:fa7:beef::2")
         self.assertEqual(ipv6[0].type, "internal")
         self.assertIsNone(ipv6[0].description)
         self.assertIsNone(ipv6[0].as_number)
-
