@@ -1,4 +1,4 @@
-from fabric.api import run, settings, env, quiet, hosts
+from fabric.api import run, settings, env, quiet, hosts, local
 from cli import cli, load_config
 from file import template
 import converters
@@ -18,8 +18,12 @@ logger.addHandler(ch)
 
 # Would be nice to use hosts list instead of host_string...
 def ssh_cmd(host, cmd, options={}):
-    with settings(quiet(), use_ssh_config = True, host_string = host):
-        output = run(cmd)
+    if host == "localhost":
+        with settings(quiet()):
+            output = local(cmd, capture=True)
+    else:
+        with settings(quiet(), use_ssh_config = True, host_string = host):
+            output = run(cmd)
     return output
 
 
