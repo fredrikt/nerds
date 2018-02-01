@@ -12,36 +12,54 @@ class InterfaceParser:
             for interface in i.all("interface")
         ]
 
-        interfaces = []
+        interface_map = {}
         for node in interfaceNodes:
-            interface = Interface()
-            interface.name = node.first("name").text()
-            if physicalInterfaces:
-                if interface.name not in physicalInterfaces:
-                    logger.warn("Interface {0} is configured but not found in {1}".format(interface.name, host_name))
-                    continue
-                else:
-                    physicalInterfaces.remove(interface.name)
+            iname = node.first("name").text()
+            interface = interface_map.get(iname, self.new_interface(iname))
 
-            interface.vlantagging = len(node.all("vlan-tagging")) > 0
-            interface.bundle = node.first("bundle").text()
-            interface.description = node.first("description").text()
-            interface.inactive = node.attr('inactive') == 'inactive'
-            # TODO: tunnel dict..? Does it make sense when source/dest is empty?
-            interface.tunneldict.append({
-                'source': node.first("source").text(),
-                'destination': node.first("destination").text(),
-            })
+            if physicalInterfaces and iname not in physicalInterfaces:
+                logger.warn("Interface {0} is configured but not found in {1}".format(iname, host_name))
+                continue
 
-            # Units
-            interface.unitdict = [self._unit(u) for u in node.all("unit")]
-            interfaces.append(interface)
+            # Update interface
+            self._interface(interface, node)
+            interface_map[interface.name] = interface
+
+        # Add remaining physical interfaces if any
         for iface in physicalInterfaces:
-            interface = Interface()
-            interface.name = iface
-            interfaces.append(interface)
+            if iface not in interface_map:
+                interface_map[iface] = self.new_interface(iface)
 
-        return interfaces
+        # Handle logical systems
+        logicalNodes = [
+            iface for i in ElementParser(nodeTree).all("interfaces")
+            if i.parent().tag() in ['logical-systems']
+            for iface in i.all("interface")
+        ]
+        for node in logicalNodes:
+            iname = node.first("name").text()
+            interface = interface_map.get(iname, self.new_interface(iname))
+            # Only update unitdict for logical systems
+            interface.unitdict += [self._unit(u) for u in node.all("unit")]
+            interface_map[interface.name] = interface
+
+        return sorted(interface_map.values(), key=lambda i: i.name)
+
+    def new_interface(self, name):
+        interface = Interface()
+        interface.name = name
+        return interface
+
+    def _interface(self, interface, node):
+        interface.vlantagging = len(node.all("vlan-tagging")) > 0
+        interface.bundle = node.first("bundle").text()
+        interface.description = node.first("description").text()
+        interface.inactive = node.attr('inactive') == 'inactive'
+        interface.tunneldict.append({
+            'source': node.first("source").text(),
+            'destination': node.first("destination").text(),
+        })
+        interface.unitdict += [self._unit(u) for u in node.all("unit")]
 
     def _unit(self, unit):
         return {
