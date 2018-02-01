@@ -17,8 +17,5 @@ class RouterPaser:
         return router
 
     def _clean(self, nodeTree):
-        # Until we decide how we will handle logical-systems we remove them from
-        # the configuration.
-        logical_systems = nodeTree.getElementsByTagName('logical-systems')
-        for item in logical_systems:
-            item.parentNode.removeChild(item).unlink()
+        # Remove unwanted stuff, e.g. logical-systems
+        pass

@@ -22,6 +22,24 @@
                 <domain-name>nordu.net</domain-name>
                 <domain-search>nordu.net</domain-search>
             </system>
+            <logical-systems>
+              <name>some-logical-system</name>
+              <interfaces>
+                <interface>
+                  <name>xe-0/0/4</name>
+                  <unit>
+                    <name>1002</name>
+                    <description>XS-S02122 cph</description>
+                    <encapsulation>vlanc-ccc</encapsulation>
+                    <vlan-id>1002</vlan-id>
+                    <family>
+                      <ccc>
+                      </ccc>
+                    </family>
+                  </unit>
+                </interface>
+              </interfaces>
+            </logical-systems>
             <interfaces>
                 <apply-groups>POS</apply-groups>
                 <apply-groups>ignore-l3-incompletes</apply-groups>
@@ -185,6 +203,15 @@
                         </ieee-802.3ad>
                         <ignore-l3-incompletes/>
                     </gigether-options>
+                    <unit>
+                      <name>10</name>
+                        <description>reserved for TEST VLAN</description>
+                        <vlan-id>10</vlan-id>
+                        <family>
+                            <inet>
+                            </inet>
+                        </family>
+                    </unit>
                 </interface>
                 <interface>
                     <name>3fe</name>

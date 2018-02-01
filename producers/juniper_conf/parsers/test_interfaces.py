@@ -51,6 +51,14 @@ class InterfaceParserTest(unittest.TestCase):
         self.assertEqual(len(self.interfaces), 7)
         self.contains(lambda i: i.name == "whoooot")
 
+    def test_logical_systems(self):
+        self.interfaces = InterfaceParser().parse(self.xml)
+        et = [i for i in self.interfaces if i.name == 'xe-0/0/4']
+        self.assertEqual(len(et), 1, 'Expected only one xe-0/0/4 interface')
+        # Check that there are two interfaces 10 and 1002
+        units = [u.get('unit') for u in i.unitdict]
+        self.assertEqual(sorted(units), ['10', '1002'])
+
     def contains(self, fn):
         result = [i for i in self.interfaces if fn(i)]
         self.assertTrue(len(result) > 0, "Expected at least one matching interface")
