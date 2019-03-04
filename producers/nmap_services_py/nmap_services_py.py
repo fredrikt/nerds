@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import os
 import json
 import nmap
 import logging
@@ -129,6 +130,7 @@ def main():
     parser.add_argument('--verbose', '-v', action='store_true', default=False)
     parser.add_argument('--known', '-k', action='store_true', default=False,
                         help='Takes a list of known hosts with specified ports.')
+    parser.add_argument('--nmap-args', default='-PE -sV -sS -sU -O --osscan-guess --host-timeout 5m')
     parser.add_argument(
         '--list',
         '-L',
@@ -148,8 +150,8 @@ def main():
         'out_dir': args.O,
         'no_write': args.N
     }
-    nmap_arguments = '-PE -sV -sS -sU -O --osscan-guess --host-timeout 10m'
-    #nmap_arguments = '-PE -sV --host-timeout 10m'
+    nmap_arguments = os.environ.get('NMAP_ARGS', args.nmap_args)
+    # nmap_arguments = '-PE -sV --host-timeout 10m'
     scanners = []
     if args.target:
         ports = None
@@ -164,8 +166,6 @@ def main():
                     # Line should match "address U:X,X,T:X-X,X"
                     # http://nmap.org/book/man-port-specification.html
                     target, ports = target.strip().split()
-                    nmap_arguments = '-PE -sV -sS -sU -O --osscan-guess --host-timeout 10m'
-                    #nmap_arguments = '-PE -sV --host-timeout 10m'
                 except ValueError:
                     logger.error('Could not make sense of "%s".' % target)
                     logger.info('Line should match "address U:X,X,T:X-X,X"')
