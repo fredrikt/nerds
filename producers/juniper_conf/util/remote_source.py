@@ -48,7 +48,7 @@ class RemoteSource:
             logger.error('[{}] unable to send command - error: {}'.format(self.host, msg))
             return None
 
-        xml += '</rpc-reply>'  # Add the end element as pexpect steals it
+        xml = xml.decode('utf-8') + '</rpc-reply>'  # Add the end element as pexpect steals it
         # Remove the first line in the output which is the command sent
         # to JunOS.
 
