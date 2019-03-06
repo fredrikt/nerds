@@ -42,10 +42,7 @@ class RemoteSource:
             xml = ssh.before  # take everything printed before last expect()
             ssh.sendline('exit')
         except pexpect.ExceptionPexpect as e:
-            msg = 'No message'
-            if e.message:
-                msg = e.message.splitlines()[0]
-            logger.error('[{}] unable to send command - error: {}'.format(self.host, msg))
+            logger.error('[{}] unable to send command - error: {}'.format(self.host, e))
             return None
 
         xml = xml.decode('utf-8') + '</rpc-reply>'  # Add the end element as pexpect steals it
