@@ -6,6 +6,5 @@
 import sys
 sys.path.append('../')
 
-from utils.file import save_to_json
-from utils import nerds as _nerds
+from nerds_utils import save_to_json, to_nerds
 ```

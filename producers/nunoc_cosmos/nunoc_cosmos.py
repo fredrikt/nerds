@@ -5,8 +5,8 @@ import re
 import subprocess
 import sys
 sys.path.append('../')
-from utils.nerds import to_nerds
-from utils.file import save_to_json
+from nerds_utils.nerds import to_nerds
+from nerds_utils.file import save_to_json
 # Input nunco_repo_path
 #   Globs dirs in root
 

@@ -9,6 +9,10 @@ from api import Api
 from utils import find, find_all
 from parser import junos
 import json
+import sys
+sys.path.append('../')
+# from nerds_utils.file import save_to_json
+from nerds_utils.nerds import to_nerds
 
 logger = logging.getLogger('nso')
 logger.setLevel(logging.INFO)
@@ -25,7 +29,7 @@ def cli():
     return config, args.out
 
 
-def junos_router(device, device_data, api):
+def junos_device(device, device_data, api):
     router = junos.parse_router(device_data)
     ifdata = api.get('/devices/device/{}/config/configuration/interfaces?deep'.format(device))
     router.interfaces = junos.parse_interfaces(ifdata)
@@ -36,10 +40,6 @@ def junos_router(device, device_data, api):
 
 
 def main():
-    # with open('interfaces-dk-ore-deep.json') as f:
-    #     iface_data = json.load(f)
-    # interfaces = junos.parse_interfaces(iface_data)
-    # print(json.dumps([i.to_json() for i in interfaces], indent=4))
     config, out_dir = cli()
 
     base_url = config['nso']['url']
@@ -54,8 +54,12 @@ def main():
         # check if juniper
         device_data = api.get('/devices/device/' + device)
         if junos.is_junos(device_data):
-            router = junos_router(device, device_data, api)
-            print(json.dumps(router.to_json(), indent=4, sort_keys=True))
+            router = junos_device(device, device_data, api)
+
+            # output nerds
+            out = to_nerds(router.name, 'nso_juniper', router.to_json())
+
+            print(json.dumps(out, indent=4, sort_keys=True))
             break
         else:
             print('-', device)
