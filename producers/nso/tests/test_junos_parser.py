@@ -52,6 +52,8 @@ class JunosParserTest(unittest.TestCase):
 
         self.assertEqual(router.name, 'some-device.nordu.net')
         self.assertEqual(router.version, '12.1X44-D30.3')
+        self.assertEqual(router.model, '')
+        self.assertEqual(router.hardware, {})
 
     def test_with_chassis_info(self):
         data = {
