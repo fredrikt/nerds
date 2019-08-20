@@ -24,7 +24,7 @@ logger.addHandler(ch)
 
 
 def junos_device_to_nerds(device, device_data, api):
-    chassis_data = api.post('/devices/device/{}/rpc/jrpc:rpc-get-chassis-inventory/_operations/get-chassis-inventory')
+    chassis_data = api.post('/devices/device/{}/rpc/jrpc:rpc-get-chassis-inventory/_operations/get-chassis-inventory'.format(device))
 
     router = junos.parse_router(device_data, chassis_data)
     ifdata = api.get('/devices/device/{}/config/configuration/interfaces?deep'.format(device))

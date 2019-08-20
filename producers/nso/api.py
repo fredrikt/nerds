@@ -26,12 +26,13 @@ class Api(object):
                 result = {}
         return result
 
-    def post(self, path, data=""):
+    def post(self, path, data=None):
         url = '{}{}'.format(self.url, path)
         headers = {
             'Authorization': self.auth(),
+            'Accept': 'application/vnd.yang.data+json',
         }
-        with urlopen(Request(url, headers=headers), data=data) as r:
+        with urlopen(Request(url, headers=headers, method='POST'), data=data) as r:
             try:
                 result = json.load(r)
             except json.decoder.JSONDecodeError:
