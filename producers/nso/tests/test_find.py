@@ -31,3 +31,8 @@ class FindTest(unittest.TestCase):
         }
 
         self.assertEqual(find('test.hest/test', data, '/'), 'sweet')
+
+    def test_empty_data(self):
+        data = {}
+
+        self.assertEqual(find('test.hest', data), None)

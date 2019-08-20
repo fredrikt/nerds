@@ -1,5 +1,5 @@
 from models import Interface, BgpPeering, Router
-from utils import find, find_first, find_all
+from utils import find, find_first, find_all, hostname_clean
 
 
 def parse_interface(item):
@@ -28,13 +28,13 @@ def parse_unit(item):
 
 
 def parse_interfaces(data):
-    return [parse_interface(item) for item in find('junos:interfaces.interface', data)]
+    return [parse_interface(item) for item in find('junos:interfaces.interface', data, default=[])]
 
 
 def parse_bgp_sessions(data):
     peerings = []
 
-    for group in find('junos:bgp.group', data):
+    for group in find('junos:bgp.group', data, default=[]):
         # inactive groups not shown it seems
         groupName = group['name']
         groupType = group.get('type')
@@ -57,12 +57,16 @@ def is_junos(data):
     return find('tailf-ncs:device.config.junos:configuration', data) is not None
 
 
-def parse_router(data):
+def parse_router(data, chassis_data=None):
     router_data = data['tailf-ncs:device']
 
     router = Router()
-    name = router_data['address'].replace('lo0.', '')
+    name = hostname_clean(router_data['address'])
     router.name = name
     router.version = find('config.junos:configuration.version', router_data)
-    # model missing
+    if chassis_data:
+        chassis = find('junos-rpc:output.chassis-inventory.chassis', chassis_data, default={})
+        if chassis:
+            router.model = chassis['description']
+        router.hardware = chassis
     return router

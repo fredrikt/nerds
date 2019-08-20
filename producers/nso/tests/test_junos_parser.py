@@ -36,6 +36,86 @@ class JunosParserTest(unittest.TestCase):
         }
         self.assertFalse(junos.is_junos(data))
 
+    def test_parse_router(self):
+        data = {
+            'tailf-ncs:device': {
+                'name': 'some-device',
+                'address': 'lo0.some-device.nordu.net',
+                'config': {
+                    'junos:configuration': {
+                        'version': '12.1X44-D30.3'
+                    }
+                }
+            }
+        }
+        router = junos.parse_router(data)
+
+        self.assertEqual(router.name, 'some-device.nordu.net')
+        self.assertEqual(router.version, '12.1X44-D30.3')
+
+    def test_with_chassis_info(self):
+        data = {
+            'tailf-ncs:device': {
+                'name': 'some-device',
+                'address': 'lo0.some-device.nordu.net',
+                'config': {
+                    'junos:configuration': {
+                        'version': '12.1X44-D30.3'
+                    }
+                }
+            }
+        }
+        chassis_data = {
+            'junos-rpc:output': {
+                'chassis-inventory': {
+                    'chassis': {
+                        'name': 'Chassis',
+                        'serial-number': 'SNID32AS',
+                        'description': 'MX2010',
+                        'chassis-module': [
+                            {
+                                'name': 'Something 1',
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+        router = junos.parse_router(data, chassis_data)
+
+        self.assertEqual(router.name, 'some-device.nordu.net')
+        self.assertEqual(router.version, '12.1X44-D30.3')
+        self.assertEqual(router.model, 'MX2010')
+        hw = router.hardware
+        self.assertEqual(hw['name'], 'Chassis')
+        self.assertEqual(hw['serial-number'], 'SNID32AS')
+        self.assertEqual(hw['description'], 'MX2010')
+        self.assertEqual(len(hw['chassis-module']), 1)
+        self.assertEqual(hw['chassis-module'][0]['name'], 'Something 1')
+
+    def test_with_emptychassis_info(self):
+        data = {
+            'tailf-ncs:device': {
+                'name': 'some-device',
+                'address': 'lo0.some-device.nordu.net',
+                'config': {
+                    'junos:configuration': {
+                        'version': '12.1X44-D30.3'
+                    }
+                }
+            }
+        }
+        chassis_data = {
+            'junos-rpc:output': {
+            }
+        }
+        router = junos.parse_router(data, chassis_data)
+
+        self.assertEqual(router.name, 'some-device.nordu.net')
+        self.assertEqual(router.version, '12.1X44-D30.3')
+        self.assertEqual(router.model, '')
+        self.assertEqual(router.hardware, {})
+
 
 class JunosParseInterfaceTest(unittest.TestCase):
 
@@ -120,3 +200,8 @@ class JunosParseInterfaceTest(unittest.TestCase):
         self.assertEqual(iface.name, 'test1')
         self.assertIsNone(iface.description)
         self.assertEqual(iface.tunneldict, [{'source': '172.16.0.1', 'destination': '172.18.0.2'}])
+
+    def test_empty(self):
+        data = {}
+        interfaces = junos.parse_interfaces(data)
+        self.assertEqual(interfaces, [])

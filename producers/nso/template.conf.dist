@@ -3,3 +3,11 @@
 url=http://localhost:8080/api/running
 user=
 password=
+
+[routers]
+devices=
+device_groups=
+
+[switches]
+devices=
+device_groups=

@@ -96,3 +96,8 @@ class BgpJunosParserTest(unittest.TestCase):
         self.assertIsNone(peering.description)
         self.assertIsNone(peering.as_number)
         self.assertIsNone(peering.local_address)
+
+    def test_empty(self):
+        data = {}
+        peerings = junos.parse_bgp_sessions(data)
+        self.assertEqual(peerings, [])

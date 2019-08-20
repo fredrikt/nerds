@@ -30,3 +30,7 @@ def find_all(what, data, result=None):
             else:
                 find_all(what, v, result)
     return result
+
+
+def hostname_clean(host):
+    return host.replace('lo0.', '')

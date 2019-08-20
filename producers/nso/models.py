@@ -1,11 +1,25 @@
-class Router:
+class Equipment:
     def __init__(self):
         self.name = ''
         self.version = ''
         self.model = ''
         self.interfaces = []
+
+    def to_json(self):
+        j = vars(self).copy()
+        j['interfaces'] = [i.to_json() for i in self.interfaces]
+        return j
+
+
+class Switch(Equipment):
+    pass
+
+
+class Router(Equipment):
+    def __init__(self):
+        super().__init__()
         self.bgp_peerings = []
-        self.hardware = ''
+        self.hardware = {}
 
     def to_json(self):
         j = vars(self).copy()
