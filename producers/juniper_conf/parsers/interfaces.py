@@ -15,6 +15,8 @@ class InterfaceParser:
         interface_map = {}
         for node in interfaceNodes:
             iname = node.first("name").text()
+            if iname is None:
+                continue
             interface = interface_map.get(iname, self.new_interface(iname))
 
             if physicalInterfaces and iname not in physicalInterfaces:
