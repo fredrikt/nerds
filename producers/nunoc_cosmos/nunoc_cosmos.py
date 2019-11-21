@@ -38,7 +38,11 @@ def main(nunoc_path, out_path):
                 hosts.update([clean_name(host) for host in regex_check(k, potential_hosts)])
     # for each host lookup ip
     for host in hosts:
-        out = subprocess.check_output(['host', host])
+        try:
+            out = subprocess.check_output(['host', host])
+        except subprocess.CalledProcessError:
+            out = ''
+
         ipv4_match = ipv4_re.search(out)
         ipv6_match = ipv6_re.search(out)
         addresses = []
