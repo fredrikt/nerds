@@ -39,7 +39,7 @@ def main(nunoc_path, out_path):
     # for each host lookup ip
     for host in hosts:
         try:
-            out = subprocess.check_output(['host', host])
+            out = subprocess.check_output(['host', host]).decode('utf-8')
         except subprocess.CalledProcessError:
             out = ''
 
