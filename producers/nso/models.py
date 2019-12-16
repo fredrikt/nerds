@@ -26,7 +26,7 @@ class Router(Equipment):
         j['interfaces'] = [i.to_json() for i in self.interfaces]
         j['bgp_peerings'] = [p.to_json() for p in self.bgp_peerings]
         if self.hardware:
-            j['hardware'] = self.hardware.to_json()
+            j['hardware'] = self.hardware
         return j
 
 
