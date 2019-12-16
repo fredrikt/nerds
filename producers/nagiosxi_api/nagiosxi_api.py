@@ -9,8 +9,8 @@ import json
 import sys
 sys.path.append('../')
 
-from utils.file import save_to_json
-from utils.nerds import to_nerds
+from nerds_utils.file import save_to_json
+from nerds_utils.nerds import to_nerds
 
 logger = logging.getLogger('checkmk_livestatus')
 logger.setLevel(logging.DEBUG)
