@@ -24,7 +24,11 @@ logger.addHandler(ch)
 
 
 def junos_device_to_nerds(device, device_data, api):
-    chassis_data = api.post('/devices/device/{}/rpc/jrpc:rpc-get-chassis-inventory/_operations/get-chassis-inventory'.format(device))
+    chassis_data = None
+    try:
+        chassis_data = api.post('/devices/device/{}/rpc/jrpc:rpc-get-chassis-inventory/_operations/get-chassis-inventory'.format(device))
+    except Exception as e:
+        logger.warning('Could not get chassis inventory for %s. Error: %s', device, e)
 
     router = junos.parse_router(device_data, chassis_data)
     ifdata = api.get('/devices/device/{}/config/configuration/interfaces?deep'.format(device))
