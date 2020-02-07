@@ -177,13 +177,15 @@ def main():
                 time.sleep(10)  # Wait 10 seconds for a scanner to start
     gc.collect()
     # Wait for the scanners to finish
+    last_count = len(scanners)
     while scanners:
         time.sleep(5)  # Check if scanners are done every minute
         for scanner in scanners:
             if not scanner.still_scanning():
                 scanners.remove(scanner)
-                logger.info('%d scanners still scanning.' % len(scanners))
             time.sleep(1)  # Check a scanner every 1 seconds
+        if len(scanners) < last_count:
+            logger.info('%d scanners still scanning.' % len(scanners))
         gc.collect()
 
 
