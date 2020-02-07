@@ -30,7 +30,7 @@ logger.addHandler(ch)
 VERBOSE = False
 
 
-def scan(target, nmap_arguments, ports, output_arguments):
+def scan(target, nmap_arguments, ports, output_arguments, sudo=False):
     def callback_result(host, scan_result):
         if VERBOSE:
             logger.info('Finished scanning %s.' % host)
@@ -39,7 +39,7 @@ def scan(target, nmap_arguments, ports, output_arguments):
             output(d, output_arguments['out_dir'], output_arguments['no_write'])
 
     nma = nmap.PortScannerAsync()
-    nma.scan(hosts=target, ports=ports, arguments=nmap_arguments, callback=callback_result)
+    nma.scan(hosts=target, ports=ports, arguments=nmap_arguments, callback=callback_result, sudo=sudo)
     return nma
 
 
@@ -128,6 +128,7 @@ def main():
     parser.add_argument('-O', nargs='?', default='./json/', help='Path to output directory.')
     parser.add_argument('-N', action='store_true', default=False, help='Don\'t write output to disk.')
     parser.add_argument('--verbose', '-v', action='store_true', default=False)
+    parser.add_argument('--sudo', action='store_true', default=False)
     parser.add_argument('--known', '-k', action='store_true', default=False,
                         help='Takes a list of known hosts with specified ports.')
     parser.add_argument('--nmap-args', default='-PE -sV -sS -sU -O --osscan-guess --host-timeout 5m')
@@ -155,7 +156,7 @@ def main():
     scanners = []
     if args.target:
         ports = None
-        scanners.append(scan(args.target, nmap_arguments, ports, output_arguments))
+        scanners.append(scan(args.target, nmap_arguments, ports, output_arguments, args.sudo))
     elif args.list:
         for target in args.list:
             if not args.known:
@@ -172,12 +173,12 @@ def main():
                     logger.info('http://nmap.org/book/man-port-specification.html')
                     continue
             if target and not target.startswith('#'):
-                scanners.append(scan(target, nmap_arguments, ports, output_arguments))
+                scanners.append(scan(target, nmap_arguments, ports, output_arguments, args.sudo))
                 time.sleep(20)  # Wait 20 seconds for a scanner to start
     gc.collect()
     # Wait for the scanners to finish
     while scanners:
-        time.sleep(60)  # Check if scanners are done every minute
+        time.sleep(20)  # Check if scanners are done every minute
         for scanner in scanners:
             if not scanner.still_scanning():
                 scanners.remove(scanner)
