@@ -182,8 +182,8 @@ def main():
         for scanner in scanners:
             if not scanner.still_scanning():
                 scanners.remove(scanner)
-                logger.info('%d scanners still scanning.' % len(scanners))
             time.sleep(1)  # Check a scanner every 1 seconds
+        logger.info('%d scanners still scanning.' % len(scanners))
         gc.collect()
 
 
