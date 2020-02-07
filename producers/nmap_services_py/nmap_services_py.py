@@ -174,16 +174,16 @@ def main():
                     continue
             if target and not target.startswith('#'):
                 scanners.append(scan(target, nmap_arguments, ports, output_arguments, args.sudo))
-                time.sleep(20)  # Wait 20 seconds for a scanner to start
+                time.sleep(10)  # Wait 10 seconds for a scanner to start
     gc.collect()
     # Wait for the scanners to finish
     while scanners:
-        time.sleep(20)  # Check if scanners are done every minute
+        time.sleep(5)  # Check if scanners are done every minute
         for scanner in scanners:
             if not scanner.still_scanning():
                 scanners.remove(scanner)
                 logger.info('%d scanners still scanning.' % len(scanners))
-            time.sleep(5)  # Check a scanner every 5 seconds
+            time.sleep(1)  # Check a scanner every 1 seconds
         gc.collect()
 
 
