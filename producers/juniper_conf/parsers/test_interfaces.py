@@ -56,7 +56,7 @@ class InterfaceParserTest(unittest.TestCase):
         et = [i for i in self.interfaces if i.name == 'xe-0/0/4']
         self.assertEqual(len(et), 1, 'Expected only one xe-0/0/4 interface')
         # Check that there are two interfaces 10 and 1002
-        units = [u.get('unit') for u in i.unitdict]
+        units = [u.get('unit') for u in et[0].unitdict]
         self.assertEqual(sorted(units), ['10', '1002'])
 
     def contains(self, fn):
