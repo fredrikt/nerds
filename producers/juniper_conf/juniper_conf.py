@@ -124,6 +124,7 @@ def main():
     junosRemote = JunosRemoteSource(None, config.get('ssh', 'user'), config.get('ssh', 'password'))
     for host in remote_sources:
         junosRemote.host = host
+        version_data = junosRemote.show_version()
         configuration = junosRemote.show_configuration()
         if configuration:
             interfaces = junosRemote.show_interfaces()
@@ -135,11 +136,9 @@ def main():
             hardware = junosRemote.show_hardware()
             if hardware:
                 chassis = ChassisParser().parse(hardware)
-                router_model = chassis.description
-            else:
-                router_model = None
+
             # Parse the xml document to create a Router object
-            router = RouterPaser().parse(configuration, router_model, physical_interfaces)
+            router = RouterPaser().parse(configuration, version_data, physical_interfaces)
             if chassis:
                 router.hardware = chassis
             # Write JSON
