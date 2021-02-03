@@ -60,9 +60,9 @@ def is_ipaddr(name):
 
 def out_nerds(nerds, out_dir, not_to_disk):
     if not_to_disk:
-        print(json.dumps(nerds, indent=4, sort_keys=True))
+        print(json.dumps(nerds, indent=4, sort_keys=False))
     else:
-        save_to_json(nerds, out_dir)
+        save_to_json(nerds, out_dir, sort_keys=False)
 
 
 def process_devices(api, out_dir, not_to_disk, devices):
