@@ -42,4 +42,4 @@ class Api(object):
 
     def auth(self):
         basic = '{}:{}'.format(self.user, self.password).encode('UTF-8')
-        return 'Basic {}'.format(base64.encodestring(basic).decode('UTF-8')[:-1])
+        return 'Basic {}'.format(base64.encodebytes(basic).decode('UTF-8')[:-1])
