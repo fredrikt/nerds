@@ -92,8 +92,8 @@ class JunosParserTest(unittest.TestCase):
         self.assertEqual(hw['name'], 'Chassis')
         self.assertEqual(hw['serial-number'], 'SNID32AS')
         self.assertEqual(hw['description'], 'MX2010')
-        self.assertEqual(len(hw['chassis-module']), 1)
-        self.assertEqual(hw['chassis-module'][0]['name'], 'Something 1')
+        self.assertEqual(len(hw['sub-modules']), 1)
+        self.assertEqual(hw['sub-modules'][0]['name'], 'Something 1')
 
     def test_with_emptychassis_info(self):
         data = {

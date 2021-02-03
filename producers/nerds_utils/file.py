@@ -19,7 +19,7 @@ def load_nerds_file(file_name):
     return current
 
 
-def save_to_json(nerds, out_dir, merge=merge_nerds_file):
+def save_to_json(nerds, out_dir, merge=merge_nerds_file, sort_keys=True):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
@@ -32,6 +32,6 @@ def save_to_json(nerds, out_dir, merge=merge_nerds_file):
                 current = load_nerds_file(file_name)
                 nerds = merge(current, nerds)
             with open(file_name, 'w') as f:
-                json.dump(nerds, f, indent=4, sort_keys=True)
+                json.dump(nerds, f, indent=4, sort_keys=sort_keys)
         else:
             pass

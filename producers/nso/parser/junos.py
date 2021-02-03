@@ -57,6 +57,19 @@ def is_junos(data):
     return find('tailf-ncs:device.config.junos:configuration', data) is not None
 
 
+def parse_chassis(data):
+    chassis = {}
+    sub_modules = []
+    for key, val in data.items():
+        # Submodules all end in -module / contains
+        if '-module' in key:
+            sub_modules += [parse_chassis(mod) for mod in val]
+        else:
+            chassis[key] = val
+    if sub_modules:
+        chassis['sub-modules'] = sub_modules
+    return chassis
+
 def parse_router(data, chassis_data=None):
     router_data = data['tailf-ncs:device']
 
@@ -68,5 +81,5 @@ def parse_router(data, chassis_data=None):
         chassis = find('junos-rpc:output.chassis-inventory.chassis', chassis_data, default={})
         if chassis:
             router.model = chassis['description']
-        router.hardware = chassis
+        router.hardware = parse_chassis(chassis)
     return router
