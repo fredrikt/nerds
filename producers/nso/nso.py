@@ -33,8 +33,14 @@ def junos_device_to_nerds(device, device_data, api):
     router = junos.parse_router(device_data, chassis_data)
     ifdata = api.get('/devices/device/{}/config/configuration/interfaces?deep'.format(device))
     router.interfaces = junos.parse_interfaces(ifdata)
+
     bgpdata = api.get('/devices/device/{}/config/configuration/protocols/bgp?deep'.format(device))
     router.bgp_peerings = junos.parse_bgp_sessions(bgpdata)
+
+    # logical systems
+    logical_ifdata = api.get('/devices/device/{}/config/configuration/logical-systems?select=name;interfaces(*)'.format(device), collection=True)
+    junos.parse_logical_interfaces(logical_ifdata, router.interfaces)
+
 
     if device not in router.name:
         logger.warning('%s ==> %s', device, router.name)
