@@ -33,6 +33,7 @@ def parse_unit(item, logical_system=None):
 def parse_interfaces(data):
     return [parse_interface(item) for item in find('junos:interfaces.interface', data, default=[])]
 
+
 def parse_logical_interfaces(data, interfaces):
     # make interface map for quick lookups
     if_map = { i.name: i for i in interfaces }
@@ -45,11 +46,8 @@ def parse_logical_interfaces(data, interfaces):
                 interfaces.append(iface)
     return interfaces
 
-def parse_bgp_sessions(data):
-    peerings = []
 
-    for group in find('junos:bgp.group', data, default=[]):
-        # inactive groups not shown it seems
+def parse_bgp_group(group, peerings):
         groupName = group['name']
         groupType = group.get('type')
         localAddress = group.get('local-address')
@@ -64,6 +62,22 @@ def parse_bgp_sessions(data):
             peering.local_address = localAddress
             peering.as_number = neighbor.get('peer-as')
             peerings.append(peering)
+
+
+def parse_bgp_sessions(data):
+    peerings = []
+
+    for group in find('junos:bgp.group', data, default=[]):
+        parse_bgp_group(group, peerings)
+    return peerings
+
+
+def parse_logical_bgp_sessions(data):
+    peerings = []
+
+    for ls in find('collection.junos:logical-systems', data, default=[]):
+      for group in find('protocols.bgp.group', ls, default=[]):
+        parse_bgp_group(group, peerings)
     return peerings
 
 
