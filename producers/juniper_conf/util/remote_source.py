@@ -22,7 +22,7 @@ class RemoteSource:
         login_choices = [ssh_newkey, 'Password:', 'password:', pexpect.EOF, "--- JUNOS", "Ubuntu"]
 
         try:
-            ssh_cmd = 'ssh -o ConnectTimeout=10 {user}@{host}'.format(user=self.username, host=self.host)
+            ssh_cmd = 'ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=No {user}@{host}'.format(user=self.username, host=self.host)
             ssh = pexpect.spawn(ssh_cmd)
             i = ssh.expect(login_choices, timeout=12)
             if i == 0:
