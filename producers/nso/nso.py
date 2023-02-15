@@ -111,7 +111,9 @@ def main(config, section, out_dir, not_to_disk):
 
     api = Api(base_url, api_user, api_password)
     device_groups = api.get('/devices/device-group?shallow', collection=True)
-    device_groups = {dg['name']: dg['device-name'] for dg in find('collection.tailf-ncs:device-group', device_groups, default=[])}
+    # TODO: device-groups can have other device groups, and no device-names...
+    # print(json.dumps(device_groups, indent=4))
+    device_groups = {dg['name']: dg['device-name'] for dg in find('collection.tailf-ncs:device-group', device_groups, default=[]) if 'device-name' in dg}
 
     if config.has_section(section):
         devices = get_devices(config[section], device_groups)
