@@ -20,7 +20,7 @@
 
 from xml.dom import minidom
 import sys
-from configparser import SafeConfigParser
+from configparser import ConfigParser
 import argparse
 import logging
 from parsers import ElementParser, RouterPaser, ChassisParser
@@ -54,7 +54,7 @@ def init_config(path):
     Initializes the configuration file located in the path provided.
     """
     try:
-        config = SafeConfigParser()
+        config = ConfigParser()
         config.read(path)
         return config
     except IOError as e:
