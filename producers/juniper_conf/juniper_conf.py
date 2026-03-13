@@ -59,6 +59,7 @@ def init_config(path):
         return config
     except IOError as e:
         logger.error("I/O error: %s", e)
+        raise
 
 
 def get_local_xml(f):
