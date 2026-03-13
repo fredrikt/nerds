@@ -59,6 +59,7 @@ def init_config(path):
         return config
     except IOError as e:
         logger.error("I/O error: %s", e)
+        raise
 
 
 def get_local_xml(f):
@@ -108,6 +109,27 @@ def parse_args():
     return config, not_to_disk, out_dir
 
 
+def scan_remote_host(host, username, password):
+    """
+    Fetch and parse configuration from a single remote Junos host.
+    Returns a Router object, or None if the configuration could not be fetched.
+    """
+    remote = JunosRemoteSource(host, username, password)
+    version_data = remote.show_version()
+    configuration = remote.show_configuration()
+    if not configuration:
+        return None
+    interfaces = remote.show_interfaces()
+    physical_interfaces = get_physical_interfaces(interfaces) if interfaces else []
+    router = RouterPaser().parse(configuration, version_data, physical_interfaces)
+    hardware = remote.show_hardware()
+    if hardware:
+        chassis = ChassisParser().parse(hardware)
+        if chassis:
+            router.hardware = chassis
+    return router
+
+
 def main():
     config, not_to_disk, out_dir = parse_args()
     jsonWriter = JsonWriter(not_to_disk, out_dir)
@@ -121,27 +143,9 @@ def main():
             jsonWriter.write(router)
     # Process remote hosts
     remote_sources = config.get('sources', 'remote').split()
-    junosRemote = JunosRemoteSource(None, config.get('ssh', 'user'), config.get('ssh', 'password'))
     for host in remote_sources:
-        junosRemote.host = host
-        version_data = junosRemote.show_version()
-        configuration = junosRemote.show_configuration()
-        if configuration:
-            interfaces = junosRemote.show_interfaces()
-            if interfaces:
-                physical_interfaces = get_physical_interfaces(interfaces)
-            else:
-                physical_interfaces = []
-
-            hardware = junosRemote.show_hardware()
-            if hardware:
-                chassis = ChassisParser().parse(hardware)
-
-            # Parse the xml document to create a Router object
-            router = RouterPaser().parse(configuration, version_data, physical_interfaces)
-            if chassis:
-                router.hardware = chassis
-            # Write JSON
+        router = scan_remote_host(host, config.get('ssh', 'user'), config.get('ssh', 'password'))
+        if router:
             jsonWriter.write(router)
     return 0
 
