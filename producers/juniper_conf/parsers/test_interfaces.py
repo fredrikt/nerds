@@ -67,3 +67,62 @@ class InterfaceParserTest(unittest.TestCase):
         print("Interfaces:")
         for i in self.interfaces:
             print(json.dumps(i.to_json(), indent=2))
+
+
+class TunnelInterfaceTest(unittest.TestCase):
+    """Regression tests for fti0 flexible-tunnel interfaces.
+      1. tunnel addresses leaking None into the unit 'address' list
+      2. tunnel source/destination parsed as whitespace instead of the real IPs
+    """
+
+    FTI0_XML = """\
+    <rpc-reply>
+    <configuration>
+        <system>
+        <host-name>test-router</host-name>
+        </system>
+        <interfaces>
+        <interface>
+            <name>fti0</name>
+            <unit>
+            <name>100</name>
+            <tunnel>
+                <encapsulation>
+                <gre>
+                    <source><address>86.104.201.33</address></source>
+                    <destination><address>86.104.52.105</address></destination>
+                </gre>
+                </encapsulation>
+            </tunnel>
+            <family>
+                <inet><address><name>192.168.88.254/31</name></address></inet>
+                <inet6><address><name>fd00:168:88:254::1/64</name></address></inet6>
+            </family>
+            </unit>
+        </interface>
+        </interfaces>
+    </configuration>
+    </rpc-reply>
+    """
+
+    def setUp(self):
+        # Fixture: re-parse a fresh minidom doc before every test method,
+        # then run it through the real parser once.
+        doc = minidom.parseString(self.FTI0_XML)
+        interfaces = InterfaceParser().parse(doc)
+        self.fti = next(i for i in interfaces if i.name == "fti0")
+
+    def test_unit_addresses_have_no_none(self):
+        # Bug 1: tunnel <address> elements must NOT leak into unit addresses.
+        unit = self.fti.unitdict[0]
+        self.assertNotIn(None, unit["address"])
+        self.assertEqual(
+            sorted(unit["address"]),
+            sorted(["192.168.88.254/31", "fd00:168:88:254::1/64"]),
+        )
+
+    def test_tunnel_source_and_destination(self):
+        # Bug 2: tunnel source/destination must be the real GRE endpoint IPs.
+        tunnel = self.fti.tunneldict[0]
+        self.assertEqual(tunnel["source"], "86.104.201.33")
+        self.assertEqual(tunnel["destination"], "86.104.52.105")
