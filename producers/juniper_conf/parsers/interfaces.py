@@ -58,8 +58,8 @@ class InterfaceParser:
         interface.description = node.first("description").text()
         interface.inactive = node.attr('inactive') == 'inactive'
         interface.tunneldict.append({
-            'source': node.first("source").text(),
-            'destination': node.first("destination").text(),
+            'source': node.first("source").first("address").text(),
+            'destination': node.first("destination").first("address").text(),
         })
         interface.unitdict += [self._unit(u) for u in node.all("unit")]
 
@@ -68,6 +68,8 @@ class InterfaceParser:
             'unit': unit.first("name").text(),
             'description': unit.first("description").text(),
             'vlanid': unit.first("vlan-id").text(),
-            'address': [a.first("name").text() for a in unit.all("address")],
+            'address': [a.first("name").text()
+                        for f in unit.all("family")
+                        for a in f.all("address")],
             'inactive': unit.attr('inactive') == 'inactive',
         }
